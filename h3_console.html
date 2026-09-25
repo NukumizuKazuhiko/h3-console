@@ -279,7 +279,7 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
     <label data-i18n="apiAddr">ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
   </div>
-  <div class="hint">v1.31</div>
+  <div class="hint">v1.32</div>
 </div>
 
 <div class="panel">
@@ -1559,12 +1559,12 @@ function updateMonitor(st, q){
   if(d && $("monGpuName")){
     monGpuBase = d.name || "-";
     const gn = $("monGpuName");
-    gn.textContent = gpuSubText();
+    gn.textContent = monGpuBase;
     gn.title = monGpuBase;
   }
   if(d && d.vram_total && $("monVram")){
     const used = d.vram_total - (d.vram_free || 0);
-    setMon("monVram", 100 * used / d.vram_total);
+    setMon("monVram", Math.round(100 * used / d.vram_total));
     $("monVramSub").textContent = (used/1073741824).toFixed(1) + " / " + (d.vram_total/1073741824).toFixed(1) + " GB";
   }
   const rt = st.system && st.system.ram_total, rf = st.system && st.system.ram_free;
