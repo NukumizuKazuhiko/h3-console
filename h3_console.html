@@ -417,12 +417,19 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
   </div>
   <label data-i18n="ghRepo">GitHub 仓库</label>
   <div class="inline">
-    <a class="ghLink" href="https://github.com/NukumizuKazuhiko/h3-console" onclick="return openGitHub(this.href)">
+    <a class="ghLink" href="https://github.com/NukumizuKazuhiko/h3-console" onclick="return openExternal(this.href)">
       <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
       NukumizuKazuhiko/h3-console ↗
     </a>
   </div>
-  <div class="hint">v1.33</div>
+  <label data-i18n="afdianLabel">爱发电 · 赞助</label>
+  <div class="inline">
+    <a class="ghLink" href="https://afdian.com/a/Venshell" onclick="return openExternal(this.href)">
+      <svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.8-9.2C.7 8.6 2.5 5 6 5c2.2 0 3.6 1.2 4.4 2.4l1.6 2.3 1.6-2.3C14.4 6.2 15.8 5 18 5c3.5 0 5.3 3.6 3.8 6.8C19.5 16.4 12 21 12 21z"/></svg>
+      afdian.com/a/Venshell ↗
+    </a>
+  </div>
+  <div class="hint">v1.34</div>
 </div>
 
 </div>
@@ -883,7 +890,7 @@ zh: {
  nodeErr:"节点校验失败:\n", submitFail:"提交失败: ",
  resuming:"恢复追踪中…", loadingModel:"排队/加载模型中…", generating:"生成中…",
  sampling:"采样中 {v} / {m} 步", execNode:"执行节点 ",
- tabCreate:"创作", tabSettings:"设置", settingsSec:"设置", account:"账号", langLabel:"语言", themeLabel:"主题", ghRepo:"GitHub 仓库",
+ tabCreate:"创作", tabSettings:"设置", settingsSec:"设置", account:"账号", langLabel:"语言", themeLabel:"主题", ghRepo:"GitHub 仓库", afdianLabel:"爱发电 · 赞助",
  resultSec:"结果", playAfter:"生成完成后在此播放", download:"下载", newWin:"新窗口", del:"删除",
  fileGone:"文件已不存在（记录已过期）", confirmDel:"删除该记录？（本地+云端）", deleted:"已删除",
  task:"任务", interrupting:"中断中…", waiting:"等待中",
@@ -925,7 +932,7 @@ en: {
  nodeErr:"Node validation failed:\n", submitFail:"Submit failed: ",
  resuming:"Resuming…", loadingModel:"Queued / loading models…", generating:"Generating…",
  sampling:"Sampling {v} / {m}", execNode:"Running ",
- tabCreate:"Create", tabSettings:"Settings", settingsSec:"Settings", account:"Account", langLabel:"Language", themeLabel:"Theme", ghRepo:"GitHub Repo",
+ tabCreate:"Create", tabSettings:"Settings", settingsSec:"Settings", account:"Account", langLabel:"Language", themeLabel:"Theme", ghRepo:"GitHub Repo", afdianLabel:"Afdian · Sponsor",
  resultSec:"Results", playAfter:"Video will appear here", download:"Download", newWin:"New tab", del:"Delete",
  fileGone:"File no longer exists (record expired)", confirmDel:"Delete this record? (local + cloud)", deleted:"Deleted",
  task:"Task", interrupting:"Aborting…", waiting:"Waiting",
@@ -989,7 +996,7 @@ function go(tab){
   if(b2) b2.classList.toggle("active", tab === "settings");
   window.scrollTo(0, 0);
 }
-function openGitHub(url){
+function openExternal(url){
   try{ if(window.H3App && window.H3App.openUrl){ window.H3App.openUrl(url); return false; } }catch(e){}
   window.open(url, "_blank", "noopener");
   return false;

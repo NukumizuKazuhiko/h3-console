@@ -40,7 +40,7 @@ body{
   background:var(--bg);color:var(--text);min-height:100vh;
   font-family:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"PingFang SC","HarmonyOS Sans SC","MiSans","Microsoft YaHei",sans-serif;
   font-size:14px;line-height:1.6;
-  padding:28px;max-width:1100px;margin:0 auto;
+  padding:28px 28px calc(84px + env(safe-area-inset-bottom));max-width:1100px;margin:0 auto;
   user-select:none;-webkit-user-select:none;
 }
 textarea,input,[contenteditable]{user-select:text;-webkit-user-select:text}
@@ -101,6 +101,15 @@ button{
 }
 button:hover{background:var(--accent2);box-shadow:0 4px 18px var(--glow)}
 button:active{transform:scale(.97)}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;background:var(--panel);border-top:1px solid var(--border);box-shadow:0 -8px 24px rgba(0,0,0,.16);padding-bottom:env(safe-area-inset-bottom)}
+.tabBtn{flex:1;height:58px;flex-direction:column;gap:3px;background:none;border:none;box-shadow:none;border-radius:0;color:var(--dim);font-size:11px;font-weight:500;letter-spacing:.02em}
+.tabBtn:active{transform:none}
+.tabBtn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tabBtn.active{color:var(--accent)}
+.tabBtn.active svg{filter:drop-shadow(0 0 6px var(--glow))}
+.ghLink{display:inline-flex;align-items:center;gap:6px;color:var(--accent);text-decoration:none;font-size:13px;border:1px solid var(--border);border-radius:8px;padding:9px 14px;background:var(--panel2)}
+.ghLink:active{transform:scale(.98)}
+.ghLink svg{width:16px;height:16px;fill:currentColor}
 button:disabled{background:rgba(128,128,128,.14);color:var(--dim);cursor:not-allowed;box-shadow:none;transform:none}
 button.ghost{background:transparent;border:1px solid var(--border);color:var(--text);font-weight:500;padding:0 14px;font-size:12px;border-radius:9px;box-shadow:none}
 button.ghost:hover{border-color:var(--accent);color:var(--accent);background:rgba(38,205,203,.06)}
@@ -132,10 +141,11 @@ html[data-theme="light"] button.ghost:hover{background:rgba(15,168,166,.07)}
 .cost b{color:var(--accent2);font-size:15px}
 .errBox{background:rgba(197,30,42,.12);border:1px solid rgba(197,30,42,.45);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--bone);white-space:pre-wrap;margin-top:10px;display:none}
 .presetBtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.monGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.monItem{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
-.monTop{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--dim)}
-.monTop b{color:var(--text);font-size:14px;font-weight:600}
+.monGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.monItem{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;min-width:0}
+.monTop{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;color:var(--dim)}
+.monTop span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.monTop b{flex:none;color:var(--text);font-size:14px;font-weight:600}
 .monBar{height:6px;border-radius:99px;background:var(--border);margin-top:8px;overflow:hidden}
 .monBar i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--ok));border-radius:99px;transition:width .4s}
 .monSub{font-size:11px;color:var(--dim);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -164,8 +174,7 @@ html[data-theme="light"] .imgBtn:hover{background:rgba(15,168,166,.07)}
 .foldHead:active{transform:none}
 
 @media (max-width:720px){
-  body{padding:12px}
-  .monGrid{grid-template-columns:1fr}
+  body{padding:12px 12px calc(78px + env(safe-area-inset-bottom))}
   h1{font-size:16px}
   .brandMark{width:32px;height:32px;border-radius:10px;font-size:13px}
   .panel{padding:14px;border-radius:14px}
@@ -230,21 +239,15 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
     <div class="brandMark">H3</div>
     <h1 data-i18n="title">MiniMax H3 视频生成控制台</h1>
   </div>
-  <div class="inline">
-    <select id="langSel"><option value="zh">中文</option><option value="en">English</option></select>
-    <button class="ghost" id="themeBtn" onclick="toggleTheme()" data-i18n-title="themeTitle" style="padding:6px 10px">🌙</button>
-  </div>
 </div>
+
+<div id="pageCreate">
 
 <div class="row">
 <div class="col">
 
 <div class="panel">
   <h2 data-i18n="conn">连接</h2>
-  <div class="inline">
-    <button class="ghost" id="loginBtn" onclick="openLogin()" data-i18n="login">登录 AutoDL</button>
-    <span class="hint" id="loginHint" style="margin:0"></span>
-  </div>
   <label data-i18n="instance">实例</label>
   <div class="inline">
     <select id="dlInst" style="flex:1"><option value="" data-i18n="pickInst">— 请先获取列表 —</option></select>
@@ -279,7 +282,6 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
     <label data-i18n="apiAddr">ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
   </div>
-  <div class="hint">v1.28</div>
 </div>
 
 <div class="panel">
@@ -373,6 +375,15 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
       <div class="monSub" id="monGpuName">-</div>
     </div>
     <div class="monItem">
+      <div class="monTop"><span data-i18n="monTemp">GPU 温度</span><b id="monTempVal">--</b></div>
+      <div class="monBar"><i id="monTempBar"></i></div>
+    </div>
+    <div class="monItem">
+      <div class="monTop"><span data-i18n="monVram">显存占用</span><b id="monVram">--</b></div>
+      <div class="monBar"><i id="monVramBar"></i></div>
+      <div class="monSub" id="monVramSub">-</div>
+    </div>
+    <div class="monItem">
       <div class="monTop"><span data-i18n="monRam">内存占用</span><b id="monRam">--</b></div>
       <div class="monBar"><i id="monRamBar"></i></div>
       <div class="monSub" id="monRamSub">-</div>
@@ -386,6 +397,53 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
   <div id="videoBox"><div class="placeholder" data-i18n="playAfter">生成完成后在此播放</div></div>
   <div id="histList"></div>
 </div>
+
+</div>
+
+<div id="pageSettings" style="display:none">
+
+<div class="panel">
+  <h2 data-i18n="settingsSec">设置</h2>
+  <label data-i18n="account">账号</label>
+  <div class="inline">
+    <button class="ghost" id="loginBtn" onclick="openLogin()" data-i18n="login">登录 AutoDL</button>
+    <span class="hint" id="loginHint" style="margin:0"></span>
+  </div>
+  <label data-i18n="langLabel">语言</label>
+  <select id="langSel"><option value="zh">中文</option><option value="en">English</option></select>
+  <label data-i18n="themeLabel">主题</label>
+  <div class="inline">
+    <button class="ghost" id="themeBtn" onclick="toggleTheme()" data-i18n-title="themeTitle" style="padding:6px 10px">🌙</button>
+  </div>
+  <label data-i18n="ghRepo">GitHub 仓库</label>
+  <div class="inline">
+    <a class="ghLink" href="https://github.com/NukumizuKazuhiko/h3-console" onclick="return openExternal(this.href)">
+      <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+      NukumizuKazuhiko/h3-console ↗
+    </a>
+  </div>
+  <label data-i18n="afdianLabel">爱发电 · 赞助</label>
+  <div class="inline">
+    <a class="ghLink" href="https://afdian.com/a/Venshell" onclick="return openExternal(this.href)">
+      <svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.8-9.2C.7 8.6 2.5 5 6 5c2.2 0 3.6 1.2 4.4 2.4l1.6 2.3 1.6-2.3C14.4 6.2 15.8 5 18 5c3.5 0 5.3 3.6 3.8 6.8C19.5 16.4 12 21 12 21z"/></svg>
+      afdian.com/a/Venshell ↗
+    </a>
+  </div>
+  <div class="hint">v1.34</div>
+</div>
+
+</div>
+
+<nav class="tabbar">
+  <button type="button" class="tabBtn active" id="tabCreateBtn" onclick="go('create')">
+    <svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M18.5 14.5l1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1z"/></svg>
+    <span data-i18n="tabCreate">创作</span>
+  </button>
+  <button type="button" class="tabBtn" id="tabSettingsBtn" onclick="go('settings')">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span data-i18n="tabSettings">设置</span>
+  </button>
+</nav>
 
 <div id="cfmMask"><div id="cfmBox"><p id="cfmMsg"></p><div id="cfmBtns"><button id="cfmCancel" data-i18n="cancel">取消</button><button id="cfmOk" data-i18n="ok">确定</button></div></div></div>
 
@@ -832,12 +890,13 @@ zh: {
  nodeErr:"节点校验失败:\n", submitFail:"提交失败: ",
  resuming:"恢复追踪中…", loadingModel:"排队/加载模型中…", generating:"生成中…",
  sampling:"采样中 {v} / {m} 步", execNode:"执行节点 ",
+ tabCreate:"创作", tabSettings:"设置", settingsSec:"设置", account:"账号", langLabel:"语言", themeLabel:"主题", ghRepo:"GitHub 仓库", afdianLabel:"爱发电 · 赞助",
  resultSec:"结果", playAfter:"生成完成后在此播放", download:"下载", newWin:"新窗口", del:"删除",
  fileGone:"文件已不存在（记录已过期）", confirmDel:"删除该记录？（本地+云端）", deleted:"已删除",
  task:"任务", interrupting:"中断中…", waiting:"等待中",
  confirmInterrupt:"中断当前任务？", confirmRemove:"移除该排队任务？",
  connecting:"连接中…", apiEmpty:"API 地址为空", connFail:"连接失败: ", connected:"已连接 ",
- connLost:"连接断开: ", qStat:"{r} 运行 / {p} 排队", monSec:"性能监测", monCpu:"CPU 占用", monGpu:"GPU 占用", monRam:"内存占用",
+ connLost:"连接断开: ", qStat:"{r} 运行 / {p} 排队", monSec:"性能监测", monCpu:"CPU 占用", monGpu:"GPU 占用", monTemp:"GPU 温度", monVram:"显存占用", monRam:"内存占用",
  failed:"失败", done:"完成 · ", genFailed:"生成失败，详见错误信息",
  timeout2h:"超时（2 小时）", interrupted:"已中断", execError:"执行错误",
  taskLost:"任务记录已丢失（实例可能重启过）", comfyUnreach:"ComfyUI 无法连接（实例可能已关机）",
@@ -873,12 +932,13 @@ en: {
  nodeErr:"Node validation failed:\n", submitFail:"Submit failed: ",
  resuming:"Resuming…", loadingModel:"Queued / loading models…", generating:"Generating…",
  sampling:"Sampling {v} / {m}", execNode:"Running ",
+ tabCreate:"Create", tabSettings:"Settings", settingsSec:"Settings", account:"Account", langLabel:"Language", themeLabel:"Theme", ghRepo:"GitHub Repo", afdianLabel:"Afdian · Sponsor",
  resultSec:"Results", playAfter:"Video will appear here", download:"Download", newWin:"New tab", del:"Delete",
  fileGone:"File no longer exists (record expired)", confirmDel:"Delete this record? (local + cloud)", deleted:"Deleted",
  task:"Task", interrupting:"Aborting…", waiting:"Waiting",
  confirmInterrupt:"Abort current task?", confirmRemove:"Remove queued task?",
  connecting:"Connecting…", apiEmpty:"API URL empty", connFail:"Connect failed: ", connected:"Connected ",
- connLost:"Disconnected: ", qStat:"{r} running / {p} pending", monSec:"Monitor", monCpu:"CPU", monGpu:"GPU", monRam:"RAM",
+ connLost:"Disconnected: ", qStat:"{r} running / {p} pending", monSec:"Monitor", monCpu:"CPU", monGpu:"GPU", monTemp:"GPU Temp", monVram:"VRAM", monRam:"RAM",
  failed:"Failed", done:"Done · ", genFailed:"Generation failed, see error",
  timeout2h:"Timeout (2h)", interrupted:"Aborted", execError:"Execution error",
  taskLost:"Task record lost (instance may have restarted)", comfyUnreach:"ComfyUI unreachable (instance may be off)",
@@ -926,6 +986,20 @@ function applyTheme(th){
 }
 function toggleTheme(){
   applyTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
+}
+function go(tab){
+  const pc = $("pageCreate"), ps = $("pageSettings");
+  if(pc) pc.style.display = tab === "create" ? "" : "none";
+  if(ps) ps.style.display = tab === "settings" ? "" : "none";
+  const b1 = $("tabCreateBtn"), b2 = $("tabSettingsBtn");
+  if(b1) b1.classList.toggle("active", tab === "create");
+  if(b2) b2.classList.toggle("active", tab === "settings");
+  window.scrollTo(0, 0);
+}
+function openExternal(url){
+  try{ if(window.H3App && window.H3App.openUrl){ window.H3App.openUrl(url); return false; } }catch(e){}
+  window.open(url, "_blank", "noopener");
+  return false;
 }
 
 function renderQueue(){
@@ -1372,6 +1446,12 @@ async function pollStatus(){
           monAvail = true;
           const s = await r.json();
           setMon("monCpu", s.cpu); setMon("monGpu", s.gpu);
+          monTemp = (s.temp == null) ? null : s.temp;
+          const tv = $("monTempVal");
+          if(tv){
+            tv.textContent = (monTemp == null) ? "--" : Math.round(monTemp) + "°C";
+            $("monTempBar").style.width = (monTemp == null ? 0 : Math.max(0, Math.min(100, monTemp))) + "%";
+          }
         }else if(r.status === 404){
           monAvail = false;
           setMon("monCpu", null); setMon("monGpu", null);
@@ -1533,7 +1613,7 @@ function startRun(pid, resumed){
 }
 
 let resumeFails = 0, runSeq = 0, interrupting = false;
-let monAvail;
+let monAvail, monTemp = null, monGpuBase = "-";
 function setMon(id, v){
   $(id).textContent = (v == null) ? "--" : v + "%";
   const bar = $(id + "Bar");
@@ -1542,9 +1622,15 @@ function setMon(id, v){
 function updateMonitor(st, q){
   const d = st.devices && st.devices[0];
   if(d && $("monGpuName")){
-    let name = d.name || "-";
-    if(d.vram_total) name += " · " + t("vram") + " " + ((d.vram_total-(d.vram_free||0))/1073741824).toFixed(1) + "/" + (d.vram_total/1073741824).toFixed(1) + " GB";
-    $("monGpuName").textContent = name;
+    monGpuBase = d.name || "-";
+    const gn = $("monGpuName");
+    gn.textContent = monGpuBase;
+    gn.title = monGpuBase;
+  }
+  if(d && d.vram_total && $("monVram")){
+    const used = d.vram_total - (d.vram_free || 0);
+    setMon("monVram", Math.round(100 * used / d.vram_total));
+    $("monVramSub").textContent = (used/1073741824).toFixed(1) + " / " + (d.vram_total/1073741824).toFixed(1) + " GB";
   }
   const rt = st.system && st.system.ram_total, rf = st.system && st.system.ram_free;
   if(rt && $("monRam")){

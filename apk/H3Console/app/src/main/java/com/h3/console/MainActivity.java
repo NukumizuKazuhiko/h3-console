@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.DownloadManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -17,11 +18,14 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import androidx.browser.customtabs.CustomTabsIntent;
+
 import org.json.JSONObject;
 
 import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
@@ -74,11 +78,38 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void openUrl(String url) {
-            try {
-                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
-            } catch (Exception e) {
-                Toast.makeText(MainActivity.this, "无法打开链接", Toast.LENGTH_SHORT).show();
+            openLink(url);
+        }
+    }
+
+    // 原生 App（App Links / Deep Links）→ Chrome Custom Tabs → 系统浏览器
+    private void openLink(String url) {
+        Uri uri = Uri.parse(url);
+        if (uri == null || uri.getScheme() == null) {
+            Toast.makeText(this, "无效链接", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        PackageManager pm = getPackageManager();
+        Intent base = new Intent(Intent.ACTION_VIEW, uri);
+        List<ResolveInfo> acts = pm.queryIntentActivities(base, 0);
+        for (ResolveInfo ri : acts) {
+            // 浏览器的 intent-filter 对 http/https 不限定 host（authorities=0）；
+            // 声明了 App Links / Deep Links 的原生 App 必有具体 host
+            if (ri.filter != null && ri.filter.countDataAuthorities() > 0) {
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, uri).setPackage(ri.activityInfo.packageName));
+                    return;
+                } catch (Exception ignored) {}
             }
+        }
+        try {
+            new CustomTabsIntent.Builder().setShowTitle(true).build().launchUrl(this, uri);
+            return;
+        } catch (Exception ignored) {}
+        try {
+            startActivity(base);
+        } catch (Exception e) {
+            Toast.makeText(this, "无法打开链接", Toast.LENGTH_SHORT).show();
         }
     }
 
