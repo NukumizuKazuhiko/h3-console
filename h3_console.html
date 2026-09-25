@@ -279,7 +279,7 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
     <label data-i18n="apiAddr">ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
   </div>
-  <div class="hint">v1.30</div>
+  <div class="hint">v1.31</div>
 </div>
 
 <div class="panel">
@@ -371,6 +371,10 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
       <div class="monTop"><span data-i18n="monGpu">GPU 占用</span><b id="monGpu">--</b></div>
       <div class="monBar"><i id="monGpuBar"></i></div>
       <div class="monSub" id="monGpuName">-</div>
+    </div>
+    <div class="monItem">
+      <div class="monTop"><span data-i18n="monTemp">GPU 温度</span><b id="monTempVal">--</b></div>
+      <div class="monBar"><i id="monTempBar"></i></div>
     </div>
     <div class="monItem">
       <div class="monTop"><span data-i18n="monVram">显存占用</span><b id="monVram">--</b></div>
@@ -842,7 +846,7 @@ zh: {
  task:"任务", interrupting:"中断中…", waiting:"等待中",
  confirmInterrupt:"中断当前任务？", confirmRemove:"移除该排队任务？",
  connecting:"连接中…", apiEmpty:"API 地址为空", connFail:"连接失败: ", connected:"已连接 ",
- connLost:"连接断开: ", qStat:"{r} 运行 / {p} 排队", monSec:"性能监测", monCpu:"CPU 占用", monGpu:"GPU 占用", monVram:"显存占用", monRam:"内存占用",
+ connLost:"连接断开: ", qStat:"{r} 运行 / {p} 排队", monSec:"性能监测", monCpu:"CPU 占用", monGpu:"GPU 占用", monTemp:"GPU 温度", monVram:"显存占用", monRam:"内存占用",
  failed:"失败", done:"完成 · ", genFailed:"生成失败，详见错误信息",
  timeout2h:"超时（2 小时）", interrupted:"已中断", execError:"执行错误",
  taskLost:"任务记录已丢失（实例可能重启过）", comfyUnreach:"ComfyUI 无法连接（实例可能已关机）",
@@ -883,7 +887,7 @@ en: {
  task:"Task", interrupting:"Aborting…", waiting:"Waiting",
  confirmInterrupt:"Abort current task?", confirmRemove:"Remove queued task?",
  connecting:"Connecting…", apiEmpty:"API URL empty", connFail:"Connect failed: ", connected:"Connected ",
- connLost:"Disconnected: ", qStat:"{r} running / {p} pending", monSec:"Monitor", monCpu:"CPU", monGpu:"GPU", monVram:"VRAM", monRam:"RAM",
+ connLost:"Disconnected: ", qStat:"{r} running / {p} pending", monSec:"Monitor", monCpu:"CPU", monGpu:"GPU", monTemp:"GPU Temp", monVram:"VRAM", monRam:"RAM",
  failed:"Failed", done:"Done · ", genFailed:"Generation failed, see error",
  timeout2h:"Timeout (2h)", interrupted:"Aborted", execError:"Execution error",
  taskLost:"Task record lost (instance may have restarted)", comfyUnreach:"ComfyUI unreachable (instance may be off)",
@@ -1378,8 +1382,11 @@ async function pollStatus(){
           const s = await r.json();
           setMon("monCpu", s.cpu); setMon("monGpu", s.gpu);
           monTemp = (s.temp == null) ? null : s.temp;
-          const gn = $("monGpuName");
-          if(gn) gn.textContent = gpuSubText();
+          const tv = $("monTempVal");
+          if(tv){
+            tv.textContent = (monTemp == null) ? "--" : Math.round(monTemp) + "°C";
+            $("monTempBar").style.width = (monTemp == null ? 0 : Math.max(0, Math.min(100, monTemp))) + "%";
+          }
         }else if(r.status === 404){
           monAvail = false;
           setMon("monCpu", null); setMon("monGpu", null);
@@ -1542,7 +1549,6 @@ function startRun(pid, resumed){
 
 let resumeFails = 0, runSeq = 0, interrupting = false;
 let monAvail, monTemp = null, monGpuBase = "-";
-function gpuSubText(){ return monGpuBase + (monTemp != null ? " · " + monTemp + "°C" : ""); }
 function setMon(id, v){
   $(id).textContent = (v == null) ? "--" : v + "%";
   const bar = $(id + "Bar");
