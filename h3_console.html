@@ -183,7 +183,7 @@ details.fold summary:hover{color:var(--text)}
     <label data-i18n="apiAddr">ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
   </div>
-  <div class="hint">v1.8</div>
+  <div class="hint">v1.9</div>
 </div>
 
 <div class="panel">
@@ -871,7 +871,12 @@ async function waitComfyReady(){
   for(let i=0;i<60;i++){
     try{
       const r = await fetch(nb("/system_stats"), {cache:"no-store", signal:AbortSignal.timeout(5000)});
-      if(r.ok) return true;
+      if(r.ok){
+        try{
+          const st = await r.json();
+          if(st && st.system) return true;
+        }catch(e){}
+      }
     }catch(e){}
     await new Promise(r=>setTimeout(r,5000));
   }
@@ -910,11 +915,19 @@ async function generate(){
     const ff = $("ffFile").files[0], lf = $("lfFile").files[0];
     if(ff){ wf["6"].inputs.first_frame = ["16",0]; wf["16"] = {class_type:"LoadImage", inputs:{image: await uploadImg(ff)}}; }
     if(lf){ wf["6"].inputs.last_frame = ["17",0]; wf["17"] = {class_type:"LoadImage", inputs:{image: await uploadImg(lf)}}; }
-    const r = await fetch(api("/prompt"), {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({prompt: wf, client_id: clientId})
-    });
-    const j = await r.json();
+    let j = null, lastErr = null;
+    for(let i=0;i<4;i++){
+      try{
+        const r = await fetch(api("/prompt"), {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({prompt: wf, client_id: clientId})
+        });
+        if(!r.ok) throw new Error("HTTP " + r.status);
+        j = await r.json();
+        break;
+      }catch(e){ lastErr = e; await new Promise(res=>setTimeout(res,5000)); }
+    }
+    if(!j) throw new Error(t("submitFail") + String((lastErr && lastErr.message) || lastErr).slice(0,300));
     if(j.node_errors && Object.keys(j.node_errors).length){
       throw new Error(t("nodeErr") + JSON.stringify(j.node_errors, null, 2));
     }
