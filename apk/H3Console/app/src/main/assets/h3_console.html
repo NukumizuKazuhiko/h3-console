@@ -258,7 +258,7 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
     <label data-i18n="apiAddr">ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
   </div>
-  <div class="hint">v1.18</div>
+  <div class="hint">v1.19</div>
 </div>
 
 <div class="panel">
@@ -958,7 +958,7 @@ async function resumeFromQueue(tries){
       startRun(mine[0], true);
     }
   }catch(e){
-    if((tries||0) < 10) setTimeout(()=>resumeFromQueue((tries||0)+1), 5000);
+    if((tries||0) < 20) setTimeout(()=>resumeFromQueue((tries||0)+1), 3000);
   }
 }
 
@@ -1479,6 +1479,7 @@ async function waitForResult(pid, tries, resumed, seq){
   if(tries > 720){ finishRun(null, t("timeout2h")); return; }
   try{
     const h = await (await fetch(nb("/history/"+pid), {cache:"no-store", signal:AbortSignal.timeout(8000)})).json();
+    resumeFails = 0;
     const item = h[pid];
     if(item){
       if(item.status && item.status.status_str==="error"){
@@ -1501,17 +1502,20 @@ async function waitForResult(pid, tries, resumed, seq){
           return;
         }
       }
-    }else if(resumed && tries >= 10){
+    }else if(resumed){
       const q = await (await fetch(nb("/queue"), {cache:"no-store", signal:AbortSignal.timeout(8000)})).json();
-      const entry = q.queue_running.concat(q.queue_pending).find(it=>it[1]===pid);
-      if(!entry){ finishRun(null, t("taskLost")); return; }
-      $("nodeLine").textContent = q.queue_running.some(it=>it[1]===pid) ? t("generating") : t("loadingModel");
-      resumeFails = 0;
+      const isRunning = q.queue_running.some(it=>it[1]===pid);
+      const isPending = q.queue_pending.some(it=>it[1]===pid);
+      if(!isRunning && !isPending){
+        if(tries > 5){ finishRun(null, t("taskLost")); return; }
+      }else{
+        $("nodeLine").textContent = isRunning ? t("generating") : t("loadingModel");
+      }
     }
   }catch(e){
-    if(resumed){
+    if(resumed && instOn !== false){
       resumeFails++;
-      if(resumeFails >= 5){ finishRun(null, t("comfyUnreach")); return; }
+      if(resumeFails >= 20){ finishRun(null, t("comfyUnreach")); return; }
     }
   }
   setTimeout(()=>{ if(seq === runSeq) waitForResult(pid, tries+1, resumed, seq); }, 3000);
