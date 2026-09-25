@@ -143,6 +143,7 @@ hist-item{display:block}
     <button class="ghost" onclick="cancelTimedShutdown()">取消定时</button>
     <span class="hint" id="pwrHint" style="margin:0"></span>
   </div>
+  <div class="hint" id="billLine" style="margin:4px 0 0"></div>
   <div id="advBox" style="display:none">
     <label>ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
@@ -380,6 +381,15 @@ async function dlCall(path, body){
 
 const INST_STATUS_CN = {running:"运行中", shutdown:"已关机", "powering_on":"开机中", creating:"创建中", no_charge:"已关机"};
 let instListCache = [];
+let instPrice = 0, instBootAt = null;
+
+function renderBill(){
+  const el = $("billLine");
+  if(!instBootAt){ el.textContent = ""; return; }
+  const s = Math.max(0, (Date.now()-instBootAt)/1000);
+  const dur = Math.floor(s/3600) + "h" + String(Math.floor(s%3600/60)).padStart(2,"0") + "m";
+  el.textContent = instPrice > 0 ? "本次开机 " + dur + " · ¥" + (s/3600*instPrice).toFixed(2) : "本次开机 " + dur;
+}
 let instOn = null;
 let lastInstOn = null;
 function curInst(){ return instListCache.find(i=>i.uuid === $("dlInst").value); }
@@ -395,6 +405,9 @@ async function pollInstStatus(){
         $("instText").textContent = INST_STATUS_CN[it.status] || it.status;
         const on = it.status === "running";
         instOn = on;
+        instPrice = (parseFloat(it.payg_price)||0)/1000;
+        instBootAt = on ? new Date(it.status_at).getTime() || null : null;
+        renderBill();
         if(on && (lastInstOn === false || (lastInstOn !== null && !$("apiBase").value.trim()))) autoSetApi();
         lastInstOn = on;
         $("dotInst").className = "dot " + (on ? "on" : "off");
