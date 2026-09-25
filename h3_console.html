@@ -183,7 +183,7 @@ details.fold summary:hover{color:var(--text)}
     <label data-i18n="apiAddr">ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
   </div>
-  <div class="hint">v1.9</div>
+  <div class="hint">v1.10</div>
 </div>
 
 <div class="panel">
@@ -804,6 +804,8 @@ function openWs(){
     }else if(m.type==="executing" && m.data.node===null && running){
       curProg = 100; renderQueue();
       $("progBar").style.width = "100%";
+    }else if(m.type==="execution_interrupted" && running){
+      finishRun(null, t("interrupted"));
     }
   };
   ws.onerror = ()=>{};
@@ -974,14 +976,14 @@ async function waitForResult(pid, tries, resumed, seq){
     const h = await (await fetch(nb("/history/"+pid), {cache:"no-store", signal:AbortSignal.timeout(8000)})).json();
     const item = h[pid];
     if(item){
+      if(item.status && item.status.status_str==="error"){
+        const interrupted = Object.values(item.status.messages||[]).some(m=>m[0]==="execution_interrupted");
+        if(interrupted){ finishRun(null, t("interrupted")); return; }
+        const msgs = Object.values(item.status.messages||[]).filter(m=>m[0]==="execution_error");
+        finishRun(null, msgs.length? JSON.stringify(msgs[0][1],null,2).slice(0,3000) : t("execError"));
+        return;
+      }
       if(item.status && item.status.completed){
-        if(item.status.status_str==="error"){
-          const interrupted = Object.values(item.status.messages||[]).some(m=>m[0]==="execution_interrupted");
-          if(interrupted){ finishRun(null, t("interrupted")); return; }
-          const msgs = Object.values(item.status.messages||[]).filter(m=>m[0]==="execution_error");
-          finishRun(null, msgs.length? JSON.stringify(msgs[0][1],null,2).slice(0,3000) : t("execError"));
-          return;
-        }
         const out = item.outputs && Object.values(item.outputs).find(o=>o.videos||o.gifs||o.images);
         if(out){
           let t0 = null, t1 = null;
@@ -1011,6 +1013,7 @@ async function waitForResult(pid, tries, resumed, seq){
 }
 
 function finishRun(url, errMsg, fname, serverElapsed){
+  if(!running) return;
   running = false; clearInterval(costTimer);
   localStorage.removeItem(AKEY);
   $("genBtn").disabled = false; $("genBtn").textContent = t("generate");
