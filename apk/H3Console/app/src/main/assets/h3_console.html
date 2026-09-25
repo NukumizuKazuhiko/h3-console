@@ -204,8 +204,8 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
 .ts-dropdown .option.active{background:var(--panel2);color:var(--text)}
 .ts-dropdown .option.selected{color:var(--accent)}
 .ts-dropdown .spinner{display:none}
-@keyframes tsOpen{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:none}}
-.ts-wrapper.dropdown-active .ts-dropdown{animation:tsOpen .16s ease;transform-origin:top center}
+.ts-wrapper .ts-dropdown{display:block!important;visibility:hidden!important;opacity:0;pointer-events:none;transform:translateY(-4px);transition:opacity .16s ease,transform .16s ease,visibility .16s}
+.ts-wrapper.dropdown-active .ts-dropdown{visibility:visible!important;opacity:1;pointer-events:auto;transform:none}
 .res-w{width:100%}
 .inst-w{flex:1;min-width:0}
 .lang-w{flex:none}
@@ -269,7 +269,7 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
     <label data-i18n="apiAddr">ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
   </div>
-  <div class="hint">v1.23</div>
+  <div class="hint">v1.24</div>
 </div>
 
 <div class="panel">
@@ -1139,7 +1139,7 @@ function renderInstOptions(){
   const ts = sel.tomselect;
   if(ts){
     ts.clearOptions();
-    ts.addOption(instListCache.map(it=>({value:it.uuid, text:t("instStatus", {name: truncName(it.name || it.uuid, 18), st: stText(it.status)})})));
+    ts.addOption(instListCache.map(it=>({value:it.uuid, text:truncName(it.name || it.uuid, 22)})));
     ts.refreshOptions(false);
     ts.setValue(cur && instListCache.some(i=>i.uuid===cur) ? cur : "", true);
     return;
@@ -1148,7 +1148,7 @@ function renderInstOptions(){
   for(const it of instListCache){
     const o = document.createElement("option");
     o.value = it.uuid;
-    o.textContent = t("instStatus", {name: truncName(it.name || it.uuid, 18), st: stText(it.status)});
+    o.textContent = truncName(it.name || it.uuid, 22);
     sel.appendChild(o);
   }
   if(cur && [...sel.options].some(o=>o.value===cur)) sel.value = cur;
