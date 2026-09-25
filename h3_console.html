@@ -95,6 +95,12 @@ hist-item{display:block}
 .hBtn:hover{color:var(--accent)}
 .hBtn.del:hover{color:var(--err)}
 #langSel{width:auto;flex:none}
+.imgPick{display:flex;align-items:center;gap:8px}
+.imgPick input[type=file]{display:none}
+.imgBtn{display:inline-flex;align-items:center;justify-content:center;flex:none;background:var(--panel2);border:1px dashed var(--border);border-radius:6px;color:var(--dim);padding:9px 14px;font-size:12px;cursor:pointer;transition:border-color .15s,color .15s;font-family:inherit}
+.imgBtn:hover{border-color:var(--accent);color:var(--text)}
+.imgName{flex:1;font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.imgClear{display:none}
 
 @media (max-width:720px){
   body{padding:12px}
@@ -104,6 +110,7 @@ hist-item{display:block}
   .col{min-width:100%}
   textarea{min-height:96px}
   .grid3{grid-template-columns:1fr 1fr;gap:8px}
+  .grid2{grid-template-columns:1fr;gap:8px}
   #genBtn{width:100%;padding:14px 0;font-size:15px}
   #videoBox{min-height:150px}
   #videoBox video{max-height:56vw}
@@ -166,7 +173,7 @@ hist-item{display:block}
     <label data-i18n="apiAddr">ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
   </div>
-  <div class="hint">v1.4</div>
+  <div class="hint">v1.5</div>
 </div>
 
 <div class="panel">
@@ -174,16 +181,20 @@ hist-item{display:block}
   <div class="grid2">
     <div>
       <label data-i18n="firstFrame">首帧图片（可选）</label>
-      <div class="inline">
-        <input type="file" id="ffFile" accept="image/*" style="flex:1">
-        <button class="ghost" onclick="clearImg('ffFile')" data-i18n-title="clearImg" title="清除已选图片">✕</button>
+      <div class="imgPick">
+        <label class="imgBtn" for="ffFile" data-i18n="pickImg">选择图片</label>
+        <span class="imgName" id="ffName"></span>
+        <button class="ghost imgClear" onclick="clearImg('ffFile')" data-i18n-title="clearImg" title="清除已选图片">✕</button>
+        <input type="file" id="ffFile" accept="image/*" onchange="imgPicked('ff')">
       </div>
     </div>
     <div>
       <label data-i18n="lastFrame">尾帧图片（可选）</label>
-      <div class="inline">
-        <input type="file" id="lfFile" accept="image/*" style="flex:1">
-        <button class="ghost" onclick="clearImg('lfFile')" data-i18n-title="clearImg" title="清除已选图片">✕</button>
+      <div class="imgPick">
+        <label class="imgBtn" for="lfFile" data-i18n="pickImg">选择图片</label>
+        <span class="imgName" id="lfName"></span>
+        <button class="ghost imgClear" onclick="clearImg('lfFile')" data-i18n-title="clearImg" title="清除已选图片">✕</button>
+        <input type="file" id="lfFile" accept="image/*" onchange="imgPicked('lf')">
       </div>
     </div>
   </div>
@@ -276,7 +287,7 @@ zh: {
  setting:"设置中…", shutdownIn:"{n} 分钟后关机", setFail:"设置失败：", timedCancelled:"已取消定时", cancelFail:"取消失败：",
  noForward:"未从实例数据中自动找到转发地址，请手动填写 ComfyUI API 地址",
  promptSec:"提示词", promptPh:"描述画面、镜头与音频；英文效果最佳，可用 embedding: 风格嵌入",
- firstFrame:"首帧图片（可选）", lastFrame:"尾帧图片（可选）", uploadFail:"图片上传失败：", clearImg:"清除已选图片",
+ firstFrame:"首帧图片（可选）", lastFrame:"尾帧图片（可选）", uploadFail:"图片上传失败：", clearImg:"清除已选图片", pickImg:"选择图片",
  preset0:"都市追逐", preset1:"森林日出", preset2:"霓虹夜街", clear:"清空",
  paramSec:"参数", resolution:"分辨率", duration:"时长", durSec:"{s} 秒", durFrames:"{f} 帧",
  turbo:"Turbo 加速", lora8:"8 步 LoRA", loraStrength:"LoRA 强度", seed:"种子",
@@ -316,7 +327,7 @@ en: {
  setting:"Setting…", shutdownIn:"Shutdown in {n} min", setFail:"Set failed: ", timedCancelled:"Timer cancelled", cancelFail:"Cancel failed: ",
  noForward:"No forward URL found in instance data, please enter the ComfyUI API URL manually",
  promptSec:"Prompt", promptPh:"Describe scene, camera and audio; English works best, supports embedding: style presets",
- firstFrame:"First frame (optional)", lastFrame:"Last frame (optional)", uploadFail:"Image upload failed: ", clearImg:"Clear selected image",
+ firstFrame:"First frame (optional)", lastFrame:"Last frame (optional)", uploadFail:"Image upload failed: ", clearImg:"Clear selected image", pickImg:"Choose image",
  preset0:"City chase", preset1:"Forest sunrise", preset2:"Neon night", clear:"Clear",
  paramSec:"Params", resolution:"Resolution", duration:"Duration", durSec:"{s}s", durFrames:"{f} frames",
  turbo:"Turbo", lora8:"8-step LoRA", loraStrength:"LoRA strength", seed:"Seed",
@@ -461,7 +472,18 @@ function updateDur(){
 
 function fillPreset(i){ $("prompt").value = PRESETS[i]; }
 function clearPrompt(){ $("prompt").value = ""; $("prompt").focus(); }
-function clearImg(id){ $(id).value = ""; }
+function clearImg(id){
+  $(id).value = "";
+  imgPicked(id.replace("File",""));
+}
+function imgPicked(which){
+  const inp = $(which + "File");
+  const f = inp.files[0];
+  const name = $(which + "Name");
+  name.textContent = f ? f.name : "";
+  name.title = f ? f.name : "";
+  inp.parentElement.querySelector(".imgClear").style.display = f ? "" : "none";
+}
 
 function api(path){ return $("apiBase").value.replace(/\/+$/,"") + path; }
 function nb(path){ return api(path) + (path.includes("?") ? "&" : "?") + "_=" + Date.now(); }
