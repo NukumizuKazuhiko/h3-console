@@ -183,7 +183,7 @@ details.fold summary:hover{color:var(--text)}
     <label data-i18n="apiAddr">ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
   </div>
-  <div class="hint">v1.10</div>
+  <div class="hint">v1.11</div>
 </div>
 
 <div class="panel">
@@ -287,7 +287,7 @@ zh: {
  docTitle:"H3 视频生成控制台", title:"MiniMax H3 视频生成控制台", themeTitle:"切换主题",
  conn:"连接", login:"登录 AutoDL", instance:"实例", pickInst:"— 请先获取列表 —", fetchList:"获取列表",
  unknown:"未知", notConnected:"未连接", vram:"显存", queue:"队列",
- powerOn:"开机", powerOff:"关机", timed:"定时关机", untimed:"取消定时", minTitle:"分钟后关机", autoOff:"完成后关机", autoOffDone:"任务全部完成，自动关机…",
+ powerOn:"开机", powerOff:"关机", timed:"定时关机", untimed:"取消定时", minTitle:"分钟后关机", autoOff:"完成后关机", autoOffDone:"任务全部完成，自动关机…", autoOffDl:"已开始下载，稍后自动关机…",
  apiAddr:"ComfyUI API 地址",
  loginInApp:"请在手机端 App 内使用登录", logged:"已登录", loginFirst:"请先登录", loginExpired:"登录已过期，请重新登录",
  pwrCtl:"电源控制",
@@ -328,7 +328,7 @@ en: {
  docTitle:"H3 Video Console", title:"MiniMax H3 Video Console", themeTitle:"Toggle theme",
  conn:"Connection", login:"Login AutoDL", instance:"Instance", pickInst:"— fetch list first —", fetchList:"Fetch list",
  unknown:"Unknown", notConnected:"Not connected", vram:"VRAM", queue:"Queue",
- powerOn:"Power on", powerOff:"Power off", timed:"Timed off", untimed:"Cancel timer", minTitle:"minutes from now", autoOff:"Off when done", autoOffDone:"All tasks done, shutting down…",
+ powerOn:"Power on", powerOff:"Power off", timed:"Timed off", untimed:"Cancel timer", minTitle:"minutes from now", autoOff:"Off when done", autoOffDone:"All tasks done, shutting down…", autoOffDl:"Download started, shutting down soon…",
  apiAddr:"ComfyUI API URL",
  loginInApp:"Please use login inside the mobile App", logged:"Logged in", loginFirst:"Please log in first", loginExpired:"Session expired, please log in again",
  pwrCtl:"Power controls",
@@ -615,6 +615,8 @@ async function pollInstStatus(){
         $("pwrOnBtn").disabled = on;
         $("pwrOffBtn").disabled = !on;
         if(!on){
+          const ph = $("pwrHint").textContent;
+          if(ph===t("shutting") || ph===t("autoOffDone") || ph===t("autoOffDl")) $("pwrHint").textContent = "";
           comfyOnline = false;
           $("dotConn").className = "dot off";
           $("connText").textContent = t("instOff");
@@ -1012,7 +1014,7 @@ async function waitForResult(pid, tries, resumed, seq){
   setTimeout(()=>{ if(seq === runSeq) waitForResult(pid, tries+1, resumed, seq); }, 3000);
 }
 
-function finishRun(url, errMsg, fname, serverElapsed){
+async function finishRun(url, errMsg, fname, serverElapsed){
   if(!running) return;
   running = false; clearInterval(costTimer);
   localStorage.removeItem(AKEY);
@@ -1030,6 +1032,7 @@ function finishRun(url, errMsg, fname, serverElapsed){
     const list = loadHist().filter(x=>x.pid!==entry.pid);
     list.unshift(entry); saveHist(list);
     addHistEntry(entry, true);
+    if($("autoOff").checked && instOn) autoDownload(url, fname||"");
   }
   $("costLive").innerHTML = fmtElapsed(el);
   if(taskQueue.length){
@@ -1039,10 +1042,39 @@ function finishRun(url, errMsg, fname, serverElapsed){
   }else{
     renderQueue();
     if($("autoOff").checked){
-      if(instOn){ $("pwrHint").textContent = t("autoOffDone"); doPowerOff(); }
       $("autoOff").checked = false; saveAutoOff();
+      if(instOn){
+        if(url && !errMsg){
+          $("pwrHint").textContent = t("autoOffDl");
+          await new Promise(r=>setTimeout(r, window.H3App ? 15000 : 3000));
+        }
+        $("pwrHint").textContent = t("autoOffDone");
+        doPowerOff();
+      }
     }
   }
+}
+
+async function autoDownload(url, fname){
+  try{
+    const name = fname || "video.mp4";
+    if(window.H3App){
+      const a = document.createElement("a");
+      a.href = url; a.download = name;
+      document.body.appendChild(a);
+      if(await dlVideo(a, "")) a.click();
+      a.remove();
+    }else{
+      const u = new URL(url); u.searchParams.set("_", Date.now());
+      const r = await fetch(u, {cache:"no-store"});
+      if(!r.ok) return;
+      const b = await r.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(b); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 10000);
+    }
+  }catch(e){}
 }
 
 function addHistEntry(entry, prepend){
