@@ -166,27 +166,19 @@ hist-item{display:block}
     <label data-i18n="apiAddr">ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
   </div>
-  <div class="hint">v1.2</div>
+  <div class="hint">v1.3</div>
 </div>
 
 <div class="panel">
   <h2 data-i18n="promptSec">提示词</h2>
-  <label data-i18n="workflow">工作流</label>
-  <select id="wfSel">
-    <option value="t2v" data-i18n="wfT2V">文生视频</option>
-    <option value="i2v" data-i18n="wfI2V">图生视频（首帧）</option>
-    <option value="flf2v" data-i18n="wfFLF2V">首尾帧</option>
-  </select>
-  <div id="imgBox" style="display:none">
-    <div class="grid2">
-      <div>
-        <label data-i18n="firstFrame">首帧图片</label>
-        <input type="file" id="ffFile" accept="image/*">
-      </div>
-      <div id="lfWrap" style="display:none">
-        <label data-i18n="lastFrame">尾帧图片</label>
-        <input type="file" id="lfFile" accept="image/*">
-      </div>
+  <div class="grid2">
+    <div>
+      <label data-i18n="firstFrame">首帧图片（可选）</label>
+      <input type="file" id="ffFile" accept="image/*">
+    </div>
+    <div>
+      <label data-i18n="lastFrame">尾帧图片（可选）</label>
+      <input type="file" id="lfFile" accept="image/*">
     </div>
   </div>
   <textarea id="prompt" data-i18n-ph="promptPh" placeholder="描述画面、镜头与音频；可用 embedding: 风格嵌入"></textarea>
@@ -278,8 +270,7 @@ zh: {
  setting:"设置中…", shutdownIn:"{n} 分钟后关机", setFail:"设置失败：", timedCancelled:"已取消定时", cancelFail:"取消失败：",
  noForward:"未从实例数据中自动找到转发地址，请手动填写 ComfyUI API 地址",
  promptSec:"提示词", promptPh:"描述画面、镜头与音频；英文效果最佳，可用 embedding: 风格嵌入",
- workflow:"工作流", wfT2V:"文生视频", wfI2V:"图生视频（首帧）", wfFLF2V:"首尾帧",
- firstFrame:"首帧图片", lastFrame:"尾帧图片", needFirst:"请选择首帧图片", needLast:"请选择尾帧图片", uploadFail:"图片上传失败：",
+ firstFrame:"首帧图片（可选）", lastFrame:"尾帧图片（可选）", uploadFail:"图片上传失败：",
  preset0:"都市追逐", preset1:"森林日出", preset2:"霓虹夜街", clear:"清空",
  paramSec:"参数", resolution:"分辨率", duration:"时长", durSec:"{s} 秒", durFrames:"{f} 帧",
  turbo:"Turbo 加速", lora8:"8 步 LoRA", loraStrength:"LoRA 强度", seed:"种子",
@@ -319,8 +310,7 @@ en: {
  setting:"Setting…", shutdownIn:"Shutdown in {n} min", setFail:"Set failed: ", timedCancelled:"Timer cancelled", cancelFail:"Cancel failed: ",
  noForward:"No forward URL found in instance data, please enter the ComfyUI API URL manually",
  promptSec:"Prompt", promptPh:"Describe scene, camera and audio; English works best, supports embedding: style presets",
- workflow:"Workflow", wfT2V:"Text to video", wfI2V:"Image to video (first frame)", wfFLF2V:"First & last frame",
- firstFrame:"First frame", lastFrame:"Last frame", needFirst:"Select a first-frame image", needLast:"Select a last-frame image", uploadFail:"Image upload failed: ",
+ firstFrame:"First frame (optional)", lastFrame:"Last frame (optional)", uploadFail:"Image upload failed: ",
  preset0:"City chase", preset1:"Forest sunrise", preset2:"Neon night", clear:"Clear",
  paramSec:"Params", resolution:"Resolution", duration:"Duration", durSec:"{s}s", durFrames:"{f} frames",
  turbo:"Turbo", lora8:"8-step LoRA", loraStrength:"LoRA strength", seed:"Seed",
@@ -828,19 +818,9 @@ async function generate(){
   $("genBtn").disabled = true; $("genBtn").textContent = t("submitting");
   try{
     const wf = buildWorkflow();
-    const mode = $("wfSel").value;
-    if(mode !== "t2v"){
-      const ff = $("ffFile").files[0];
-      if(!ff) throw new Error(t("needFirst"));
-      wf["6"].inputs.first_frame = ["16",0];
-      wf["16"] = {class_type:"LoadImage", inputs:{image: await uploadImg(ff)}};
-      if(mode === "flf2v"){
-        const lf = $("lfFile").files[0];
-        if(!lf) throw new Error(t("needLast"));
-        wf["6"].inputs.last_frame = ["17",0];
-        wf["17"] = {class_type:"LoadImage", inputs:{image: await uploadImg(lf)}};
-      }
-    }
+    const ff = $("ffFile").files[0], lf = $("lfFile").files[0];
+    if(ff){ wf["6"].inputs.first_frame = ["16",0]; wf["16"] = {class_type:"LoadImage", inputs:{image: await uploadImg(ff)}}; }
+    if(lf){ wf["6"].inputs.last_frame = ["17",0]; wf["17"] = {class_type:"LoadImage", inputs:{image: await uploadImg(lf)}}; }
     const r = await fetch(api("/prompt"), {
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({prompt: wf, client_id: clientId})
@@ -1000,15 +980,6 @@ async function delHist(pid){
   if(ent && $("videoBox").innerHTML.includes(ent.url)) $("videoBox").innerHTML = '<div class="placeholder">' + t("deleted") + '</div>';
 }
 
-function updateWfUI(){
-  const m = $("wfSel").value;
-  localStorage.setItem("h3_wf", m);
-  $("imgBox").style.display = m === "t2v" ? "none" : "";
-  $("lfWrap").style.display = m === "flf2v" ? "" : "none";
-}
-$("wfSel").value = localStorage.getItem("h3_wf") || "t2v";
-updateWfUI();
-$("wfSel").addEventListener("change", updateWfUI);
 applyTheme(localStorage.getItem("h3_theme") || "dark");
 $("langSel").addEventListener("change", ()=>{
   LANG = $("langSel").value;
