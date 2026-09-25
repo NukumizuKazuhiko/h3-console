@@ -1,0 +1,6 @@
+.env
+__pycache__/
+apk/H3Console/.gradle/
+apk/H3Console/app/build/
+apk/H3Console/build/
+apk/H3Console/local.properties

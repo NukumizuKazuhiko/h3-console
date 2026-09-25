@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#181617">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>H3 视频生成控制台</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"H3 %E8%A7%86%E9%A2%91%E7%94%9F%E6%88%90%E6%8E%A7%E5%88%B6%E5%8F%B0","short_name":"H3%E6%8E%A7%E5%88%B6%E5%8F%B0","display":"standalone","background_color":"%23181617","theme_color":"%23181617","start_url":"."}'>
+<style>
+:root{
+  /* 色卡（codex AGENTS.md）：曜石黑/石墨黑/混凝土白/冷银灰/电光青/酸性绿/火焰橙/警戒红/骨白 */
+  --bg:#181617; --panel:#1F2326; --panel2:rgba(206,203,193,.07);
+  --border:rgba(181,184,187,.22);
+  --text:#CECBC1; --dim:rgba(181,184,187,.65);
+  --accent:#26CDCB; --accent2:rgba(38,205,203,.85);
+  --ok:#ADCF37; --warn:#E85327; --err:#C51E2A; --bone:#E7E1D3;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--text);min-height:100vh;
+  font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+  padding:24px;max-width:1100px;margin:0 auto;
+}
+h1{font-size:20px;font-weight:600;margin-bottom:4px}
+.sub{color:var(--dim);font-size:12px;margin-bottom:18px}
+.row{display:flex;gap:16px;flex-wrap:wrap}
+.col{flex:1;min-width:320px}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px}
+.panel h2{font-size:13px;color:var(--dim);font-weight:600;margin-bottom:10px;letter-spacing:.05em}
+label{display:block;font-size:12px;color:var(--dim);margin:10px 0 4px}
+textarea,input[type=text],input[type=number],select{
+  width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:6px;
+  color:var(--text);padding:8px 10px;font-size:13px;font-family:inherit;
+}
+textarea{min-height:130px;resize:vertical;line-height:1.6}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
+.inline{display:flex;gap:8px;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.sliderVal{font-size:13px;color:var(--accent2);min-width:110px;text-align:right}
+.toggle{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:13px;color:var(--text)}
+.toggle input{accent-color:var(--accent);width:16px;height:16px}
+.hint{font-size:11px;color:var(--dim);margin-top:4px;line-height:1.5}
+button{
+  background:var(--accent);color:#181617;border:none;border-radius:6px;
+  padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;
+}
+button:hover{background:var(--accent2)}
+button:disabled{background:rgba(206,203,193,.14);color:var(--dim);cursor:not-allowed}
+button.ghost{background:var(--panel2);border:1px solid var(--border);color:var(--text);font-weight:400;padding:6px 12px;font-size:12px}
+button.ghost:hover{border-color:var(--accent)}
+.status{display:flex;gap:14px;font-size:12px;color:var(--dim);flex-wrap:wrap;margin-bottom:10px}
+.status b{color:var(--text);font-weight:600}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.dot.on{background:var(--ok)} .dot.off{background:var(--err)} .dot.busy{background:var(--warn)}
+.progressWrap{background:var(--panel2);border-radius:6px;height:10px;overflow:hidden;margin:8px 0}
+.progressBar{height:100%;background:linear-gradient(90deg,var(--accent),var(--ok));width:0%;transition:width .4s}
+.nodeLine{font-size:12px;color:var(--dim);min-height:18px}
+#queueBox{border:1px solid var(--border);border-radius:6px;margin-top:8px;font-size:12px;color:var(--dim);display:none;overflow:hidden}
+.qRow{padding:6px 10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;align-items:center}
+.qRow:first-child{border-top:none}
+.qRow.cur{color:var(--text);background:var(--panel2)}
+.qLabel{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qPct{color:var(--accent2);min-width:38px;text-align:right}
+.qWait{color:var(--dim)}
+.qDel{background:none;border:none;color:var(--dim);font-size:13px;cursor:pointer;padding:0 2px;line-height:1;font-family:inherit}
+.qDel:hover{color:var(--err)}
+#videoBox{background:#000;border-radius:8px;min-height:200px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#videoBox video{width:100%;max-height:460px;border-radius:8px}
+.placeholder{color:var(--dim);font-size:13px;padding:40px;text-align:center;line-height:1.8}
+.cost{font-size:13px;color:var(--dim)}
+.cost b{color:var(--accent2);font-size:15px}
+.errBox{background:rgba(197,30,42,.12);border:1px solid rgba(197,30,42,.45);border-radius:6px;padding:10px;font-size:12px;color:var(--bone);white-space:pre-wrap;margin-top:8px;display:none}
+.presetBtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+hist-item{display:block}
+.hist{border-top:1px solid var(--border);padding:10px 0;font-size:12px;color:var(--dim)}
+.hist:first-child{border-top:none}
+.hist b{color:var(--text)}
+.hist a{color:var(--accent2);text-decoration:none;margin-left:8px}
+.hBtn{background:none;border:none;color:var(--dim);font-size:13px;cursor:pointer;padding:0 2px;line-height:1;font-family:inherit;margin-left:8px;text-decoration:none}
+.hBtn:hover{color:var(--accent)}
+.hBtn.del:hover{color:var(--err)}
+
+@media (max-width:720px){
+  body{padding:12px}
+  h1{font-size:17px}
+  .sub{margin-bottom:12px}
+  .panel{padding:12px;border-radius:8px}
+  .col{min-width:100%}
+  textarea{min-height:96px}
+  .grid3{grid-template-columns:1fr 1fr;gap:8px}
+  #genBtn{width:100%;padding:14px 0;font-size:15px}
+  #videoBox{min-height:150px}
+  #videoBox video{max-height:56vw}
+  .sliderVal{font-size:12px;min-width:84px}
+  .status{gap:8px}
+  select,input,textarea{font-size:16px}
+}
+/* 页面内确认框：Android WebView 会吞掉原生 confirm() */
+#cfmMask{position:fixed;inset:0;background:rgba(24,22,23,.7);display:none;z-index:999;align-items:center;justify-content:center}
+#cfmBox{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px 20px;max-width:320px;width:86%;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+#cfmMsg{margin:0 0 16px;line-height:1.5;font-size:14px;color:var(--text)}
+#cfmBtns{display:flex;gap:10px}
+#cfmBtns button{flex:1;padding:10px 0;border-radius:6px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer}
+#cfmBtns button:hover{border-color:var(--accent)}
+#cfmOk{background:var(--accent)!important;color:#181617!important;border-color:var(--accent)!important}
+#cfmOk.danger{background:var(--err)!important;color:var(--bone)!important;border-color:var(--err)!important}
+</style>
+</head>
+<body>
+<h1>MiniMax H3 视频生成控制台</h1>
+
+<div class="row">
+<div class="col">
+
+<div class="panel">
+  <h2>连接</h2>
+  <div class="inline">
+    <button class="ghost" id="loginBtn" onclick="openLogin()">登录 AutoDL</button>
+    <span class="hint" id="loginHint" style="margin:0"></span>
+  </div>
+  <label>实例</label>
+  <div class="inline">
+    <select id="dlInst" style="flex:1"><option value="">— 请先获取列表 —</option></select>
+    <button class="ghost" onclick="loadInstances()">获取列表</button>
+  </div>
+  <div class="status" style="margin-top:8px">
+    <span><span class="dot off" id="dotInst"></span><span id="instText">未知</span></span>
+    <span><span class="dot off" id="dotConn"></span><span id="connText">未连接</span></span>
+    <span>显存 <b id="vramText">-</b></span>
+    <span>队列 <b id="queueText">-</b></span>
+    <span>GPU <b id="gpuText">-</b></span>
+  </div>
+  <div class="inline" style="margin-top:8px;flex-wrap:wrap">
+    <button class="ghost" id="pwrOnBtn" onclick="powerOn()">开机</button>
+    <button class="ghost" id="pwrOffBtn" onclick="powerOff()">关机</button>
+    <input type="number" id="tdMin" value="60" min="1" style="width:80px" title="分钟后关机">
+    <button class="ghost" onclick="setTimedShutdown()">定时关机</button>
+    <button class="ghost" onclick="cancelTimedShutdown()">取消定时</button>
+    <span class="hint" id="pwrHint" style="margin:0"></span>
+  </div>
+  <div id="advBox" style="display:none">
+    <label>ComfyUI API 地址</label>
+    <input type="text" id="apiBase" placeholder="https://…">
+  </div>
+  <div class="hint">v1.0</div>
+</div>
+
+<div class="panel">
+  <h2>提示词</h2>
+  <textarea id="prompt" placeholder="描述画面、镜头与音频；可用 embedding: 风格嵌入"></textarea>
+  <div class="presetBtns">
+    <button class="ghost" onclick="fillPreset(0)">都市追逐</button>
+    <button class="ghost" onclick="fillPreset(1)">森林日出</button>
+    <button class="ghost" onclick="fillPreset(2)">霓虹夜街</button>
+    <button class="ghost" onclick="clearPrompt()">清空</button>
+  </div>
+</div>
+
+</div>
+<div class="col">
+
+<div class="panel">
+  <h2>参数</h2>
+  <label>分辨率</label>
+  <select id="resSel">
+    <option value="608x352">608 × 352</option>
+    <option value="864x480">864 × 480</option>
+    <option value="1056x608">1056 × 608</option>
+    <option value="1344x768" selected>1344 × 768</option>
+  </select>
+  <label>时长 <span class="sliderVal" id="durVal"></span></label>
+  <input type="range" id="dur" min="5" max="15" step="1" value="5">
+  <div class="hint" id="durHint"></div>
+  <div class="grid3">
+    <div>
+      <label>Turbo 加速</label>
+      <label class="toggle"><input type="checkbox" id="turbo" checked> 8 步 LoRA</label>
+    </div>
+    <div>
+      <label>LoRA 强度</label>
+      <input type="number" id="loraStrength" value="1.0" min="0" max="2" step="0.1">
+    </div>
+    <div>
+      <label>种子</label>
+      <div class="inline"><input type="number" id="seed" value="0" min="0" step="1"><button class="ghost" onclick="randomSeed()">🎲</button></div>
+    </div>
+  </div>
+  <div class="hint">关闭 Turbo 用 20 步采样，速度约 1/2.5</div>
+</div>
+
+<div class="panel">
+  <h2>生成</h2>
+  <div class="inline" style="justify-content:space-between">
+    <button id="genBtn" onclick="generate()">生成视频</button>
+    <span class="cost" id="costLive">已用 <b>0:00</b></span>
+  </div>
+  <div class="progressWrap"><div class="progressBar" id="progBar"></div></div>
+  <div class="nodeLine" id="nodeLine">空闲</div>
+  <div id="queueBox"></div>
+  <div class="errBox" id="errBox"></div>
+</div>
+
+</div>
+</div>
+
+<div class="panel">
+  <h2>结果</h2>
+  <div id="videoBox"><div class="placeholder">生成完成后在此播放</div></div>
+  <div id="histList"></div>
+</div>
+
+<script>
+const PRESETS = [
+`Realistic live-action cinematic look: a post-rain dusk metropolis, anamorphic lens, shallow depth of field, film grain, city volumetric fog. A lone runner sprints across a rooftop, leaps to the next building, lands and rolls, then keeps running. Camera: high side angle tracking shot, one clean hard cut on the leap. Audio: wind, rapid footsteps, city ambience, low tense score, an accent hit on the leap. No text, subtitles, logos or watermarks.`,
+`Nature documentary look: a misty forest at sunrise, god rays through the canopy, dew on ferns, a stream glinting. Slow dolly forward along the stream, gentle camera drift. Audio: birdsong fading in, soft flowing water, warm ambient score rising with the light. No people, no text.`,
+`Neon cyberpunk street at night, rain-slick asphalt reflecting pink and cyan signage, steam from vents, a lone figure with umbrella walking away from camera. Slow tracking shot, shallow depth of field. Audio: distant traffic, rain patter, mellow synthwave bass. No readable brand text.`];
+
+const $ = id => document.getElementById(id);
+let clientId = "h3ui-" + Math.random().toString(36).slice(2);
+let ws = null, running = false, startT = 0, costTimer = null, curPid = null;
+let taskQueue = [];
+let curLabel = "", curProg = 0;
+const HKEY = "h3_history", AKEY = "h3_active";
+function saveActive(){ localStorage.setItem(AKEY, JSON.stringify({pid: curPid, startT: startT, label: curLabel, queue: taskQueue})); }
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function renderQueue(){
+  const box = $("queueBox");
+  if(!running && !taskQueue.length){ box.style.display = "none"; box.innerHTML = ""; return; }
+  let html = '<div class="qRow cur"><span class="qLabel">' + esc(curLabel || ("任务 " + String(curPid||"").slice(0,8))) + '</span><span class="qPct">' + (interrupting ? "中断中…" : curProg + "%") + "</span>" +
+    '<button class="qDel" onclick="cancelTask(\'cur\')">✕</button></div>';
+  taskQueue.forEach((t, i) => {
+    html += '<div class="qRow"><span class="qLabel">' + esc(t.label || ("任务 " + String(t.pid||"").slice(0,8))) + '</span><span class="qWait">等待中</span>' +
+      '<button class="qDel" onclick="cancelTask(' + i + ')">✕</button></div>';
+  });
+  box.innerHTML = html; box.style.display = "block";
+}
+
+async function cancelTask(idx){
+  if(idx === "cur"){
+    if(!await uiConfirm("中断当前任务？", true)) return;
+    try{ await fetch(api("/interrupt"), {method:"POST"}); }catch(e){}
+    interrupting = true; renderQueue();
+  }else{
+    const t = taskQueue[idx]; if(!t) return;
+    if(!await uiConfirm("移除该排队任务？", true)) return;
+    try{
+      await fetch(api("/queue"), {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({delete:[t.pid]})});
+    }catch(e){}
+    taskQueue.splice(idx,1); saveActive(); renderQueue();
+  }
+}
+
+function loadHist(){ try{ return JSON.parse(localStorage.getItem(HKEY)||"[]"); }catch(e){ return []; } }
+function saveHist(list){ try{ localStorage.setItem(HKEY, JSON.stringify(list.slice(0,20))); }catch(e){} }
+function viewUrl(f){ return api("/view?filename="+encodeURIComponent(f.filename)+"&subfolder="+(f.subfolder||"")+"&type="+(f.type||"output")); }
+
+function restoreOnLoad(){
+  const qp = new URLSearchParams(location.search).get("pid");
+  if(qp){
+    startT = Date.now();
+    startRun(qp, true);
+    return;
+  }
+  const act = localStorage.getItem(AKEY);
+  if(act){
+    try{
+      const a = JSON.parse(act);
+      if(a.pid){
+        startT = a.startT || Date.now();
+        curLabel = a.label || "";
+        taskQueue = a.queue || [];
+        startRun(a.pid, true);
+      }
+    }catch(e){ localStorage.removeItem(AKEY); }
+  }else{
+    resumeFromQueue();
+  }
+  for(const it of loadHist()) addHistEntry(it, false);
+}
+
+async function resumeFromQueue(){
+  try{
+    const q = await (await fetch(nb("/queue"), {cache:"no-store", signal:AbortSignal.timeout(8000)})).json();
+    const mine = q.queue_running.concat(q.queue_pending)
+      .filter(it => it[3] && it[3].client_id && String(it[3].client_id).startsWith("h3ui-"))
+      .map(it => it[1]);
+    if(mine.length){
+      startT = Date.now();
+      taskQueue = mine.slice(1).map(pid=>({pid, label:""}));
+      startRun(mine[0], true);
+    }
+  }catch(e){}
+}
+
+$("apiBase").value = localStorage.getItem("h3_api") || "";
+$("prompt").value = PRESETS[0];
+randomSeed();
+updateDur();
+$("dur").addEventListener("input", updateDur);
+
+function randomSeed(){ $("seed").value = Math.floor(Math.random()*1e9); }
+
+function updateDur(){
+  const s = +$("dur").value;
+  let f = Math.max(5, Math.round(s*24)); f += (5 - (f%17))%17;
+  $("durVal").textContent = s + " 秒";
+  $("durHint").textContent = f + " 帧";
+}
+
+function fillPreset(i){ $("prompt").value = PRESETS[i]; }
+function clearPrompt(){ $("prompt").value = ""; $("prompt").focus(); }
+
+function api(path){ return $("apiBase").value.replace(/\/+$/,"") + path; }
+function nb(path){ return api(path) + (path.includes("?") ? "&" : "?") + "_=" + Date.now(); }
+function saveApi(){ localStorage.setItem("h3_api", $("apiBase").value); }
+$("apiBase").addEventListener("change", ()=>{ saveApi(); connect(); });
+
+const DL_API = "https://www.autodl.com";
+function openLogin(){
+  if(window.H3App){ H3App.openLogin(); return; }
+  $("loginHint").textContent = "请在手机端 App 内使用登录";
+}
+function applyToken(t){
+  localStorage.setItem("h3_dltoken", t);
+  $("loginHint").textContent = "已登录";
+  loadInstances();
+}
+$("dlInst").addEventListener("change", ()=>{ localStorage.setItem("h3_inst", $("dlInst").value); updateInstUI(); autoSetApi(); });
+
+function showAdv(){ $("advBox").style.display = ""; }
+
+function fmtElapsed(el){ return "已用 <b>"+Math.floor(el/60)+":"+String(Math.floor(el%60)).padStart(2,"0")+"</b>"; }
+
+function findForwardUrl(obj){
+  const s = JSON.stringify(obj);
+  const d = (s.match(/"service_6006_domain":"([^"]+)"/) || [])[1];
+  if(d) return "https://" + d;
+  const all = (s.match(/https?:\/\/[a-zA-Z0-9.-]+\.seetacloud\.com(?::\d+)?/g)) || [];
+  return all.find(u=>/^https:\/\/u\d+-/.test(u)) || all[0] || null;
+}
+
+async function autoSetApi(){
+  if(!$("dlInst").value) return;
+  const it = curInst();
+  if(it && it.status !== "running") return;
+  let url = it ? findForwardUrl(it) : null;
+  if(!url){
+    try{
+      const d = await dlCall("/api/v1/instance/detail", {instance_uuid: $("dlInst").value});
+      url = findForwardUrl(d);
+    }catch(e){}
+  }
+  if(url){
+    if(!/:\d+$/.test(url)) url += ":8443";
+    $("apiBase").value = url;
+    saveApi();
+    $("pwrHint").textContent = "";
+    connect();
+  }else{
+    $("pwrHint").textContent = "未从实例数据中自动找到转发地址，请手动填写 ComfyUI API 地址";
+    showAdv();
+  }
+}
+
+function cleanToken(){ return (localStorage.getItem("h3_dltoken")||"").trim().replace(/^['"]+/, "").replace(/['"]+$/, "").trim(); }
+function dlHeaders(){ return {"Authorization": cleanToken(), "Content-Type": "application/json"}; }
+function dlReady(){ return cleanToken().length > 0; }
+
+async function dlCall(path, body){
+  const r = await fetch(DL_API + path, {method:"POST", headers: dlHeaders(), body: JSON.stringify(body || {}), signal: AbortSignal.timeout(15000)});
+  const j = await r.json();
+  if(j.code !== "Success") throw new Error(j.msg || ("HTTP " + r.status));
+  return j.data;
+}
+
+const INST_STATUS_CN = {running:"运行中", shutdown:"已关机", "powering_on":"开机中", creating:"创建中", no_charge:"已关机"};
+let instListCache = [];
+let instOn = null;
+let lastInstOn = null;
+function curInst(){ return instListCache.find(i=>i.uuid === $("dlInst").value); }
+
+async function pollInstStatus(){
+  if(dlReady() && $("dlInst").value){
+    try{
+      const d = await dlCall("/api/v1/instance");
+      instListCache = d.list || [];
+      renderInstOptions();
+      const it = curInst();
+      if(it){
+        $("instText").textContent = INST_STATUS_CN[it.status] || it.status;
+        const on = it.status === "running";
+        instOn = on;
+        if(on && (lastInstOn === false || (lastInstOn !== null && !$("apiBase").value.trim()))) autoSetApi();
+        lastInstOn = on;
+        $("dotInst").className = "dot " + (on ? "on" : "off");
+        $("pwrOnBtn").disabled = on;
+        $("pwrOffBtn").disabled = !on;
+        if(!on){
+          comfyOnline = false;
+          $("dotConn").className = "dot off";
+          $("connText").textContent = "实例未开机";
+          clearInterval(costTimer);
+        }
+      }
+    }catch(e){
+      $("instText").textContent = "查询失败：" + e.message; $("dotInst").className = "dot off";
+      showAdv();
+    }
+  }
+  setTimeout(pollInstStatus, 8000);
+}
+
+function renderInstOptions(){
+  const sel = $("dlInst");
+  const cur = sel.value;
+  sel.innerHTML = "";
+  for(const it of instListCache){
+    const o = document.createElement("option");
+    o.value = it.uuid;
+    o.textContent = (it.name || it.uuid) + "（" + (INST_STATUS_CN[it.status]||it.status) + "）";
+    sel.appendChild(o);
+  }
+  if(cur && [...sel.options].some(o=>o.value===cur)) sel.value = cur;
+}
+
+async function loadInstances(){
+  if(!dlReady()){ $("pwrHint").textContent = "请先登录"; return; }
+  $("pwrHint").textContent = "获取中…";
+  try{
+    const d = await dlCall("/api/v1/instance");
+    instListCache = d.list || [];
+    renderInstOptions();
+    const sel = $("dlInst");
+    const saved = localStorage.getItem("h3_inst");
+    if(saved && [...sel.options].some(o=>o.value===saved)) sel.value = saved;
+    $("pwrHint").textContent = instListCache.length ? "" : "暂无实例";
+    updateInstUI();
+    if(sel.value){ setTimeout(pollInstStatus, 500); autoSetApi(); }
+  }catch(e){
+    $("pwrHint").textContent = "获取失败：" + e.message;
+    if(String(e.message).includes("Authorize")) $("loginHint").textContent = "登录已过期，请重新登录";
+    showAdv();
+  }
+}
+
+function updateInstUI(){ if(!$("dlInst").value) $("instText").textContent = "未选择实例"; }
+
+function uiConfirm(msg, danger){
+  return new Promise(res=>{
+    $("cfmMsg").textContent = msg;
+    $("cfmOk").classList.toggle("danger", !!danger);
+    $("cfmMask").style.display = "flex";
+    const done = v => { $("cfmMask").style.display = "none"; $("cfmOk").onclick = $("cfmCancel").onclick = null; res(v); };
+    $("cfmOk").onclick = () => done(true);
+    $("cfmCancel").onclick = () => done(false);
+  });
+}
+
+async function powerOn(){
+  if(!dlReady() || !$("dlInst").value){ $("pwrHint").textContent = "请先获取并选择实例"; return; }
+  if(!await uiConfirm("确认开机？")) return;
+  $("pwrHint").textContent = "开机中…";
+  try{
+    await dlCall("/api/v1/instance/power_on", {instance_uuid: $("dlInst").value});
+    waitComfy();
+  }catch(e){ $("pwrHint").textContent = "开机失败：" + e.message; }
+}
+
+async function waitComfy(){
+  for(let i=0;i<60;i++){
+    try{
+      const r = await fetch(nb("/system_stats"), {cache:"no-store", signal:AbortSignal.timeout(3000)});
+      if(r.ok){
+        $("pwrHint").textContent = "已就绪";
+        connect();
+        return;
+      }
+    }catch(e){}
+    await new Promise(r=>setTimeout(r,5000));
+  }
+  $("pwrHint").textContent = "已开机，ComfyUI 未响应";
+}
+
+async function powerOff(){
+  const total = (running?1:0) + taskQueue.length;
+  if(total > 0){
+    if(!await uiConfirm("当前有 " + total + " 个任务，关机将全部丢弃", true)) return;
+    if(!await uiConfirm("确认中断全部任务并关机？", true)) return;
+    try{ if(running) await fetch(api("/interrupt"), {method:"POST"}); }catch(e){}
+    if(taskQueue.length){
+      try{ await fetch(api("/queue"), {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({clear:true})}); }catch(e){}
+    }
+    taskQueue = []; running = false;
+    runSeq++; interrupting = false;
+    clearInterval(costTimer);
+    localStorage.removeItem(AKEY);
+    renderQueue();
+  }else{
+    if(!await uiConfirm("确认关机？", true)) return;
+  }
+  $("pwrHint").textContent = "关机中…";
+  instOn = false;
+  try{
+    await dlCall("/api/v1/instance/power_off", {instance_uuid: $("dlInst").value});
+    setTimeout(pollInstStatus, 3000);
+  }catch(e){ $("pwrHint").textContent = "关机失败：" + e.message; }
+}
+
+async function setTimedShutdown(){
+  if(!dlReady() || !$("dlInst").value){ $("pwrHint").textContent = "请先获取并选择实例"; return; }
+  const min = Math.max(1, +$("tdMin").value || 60);
+  $("pwrHint").textContent = "设置中…";
+  try{
+    const t = new Date(Date.now() + min*60000);
+    const pad = n => String(n).padStart(2, "0");
+    const shutdown_at = t.getFullYear() + "-" + pad(t.getMonth()+1) + "-" + pad(t.getDate()) + " " + pad(t.getHours()) + ":" + pad(t.getMinutes());
+    await dlCall("/api/v1/instance/timed/shutdown", {instance_uuid: $("dlInst").value, shutdown_at});
+    $("pwrHint").textContent = min + " 分钟后关机";
+  }catch(e){ $("pwrHint").textContent = "设置失败：" + e.message; }
+}
+
+async function cancelTimedShutdown(){
+  if(!dlReady() || !$("dlInst").value){ $("pwrHint").textContent = "请先获取并选择实例"; return; }
+  try{
+    await dlCall("/api/v1/instance/timed/shutdown", {instance_uuid: $("dlInst").value, shutdown_at: null});
+    $("pwrHint").textContent = "已取消定时";
+  }catch(e){ $("pwrHint").textContent = "取消失败：" + e.message; }
+}
+
+function buildWorkflow(){
+  const [w,h] = $("resSel").value.split("x");
+  const s = +$("dur").value;
+  let frames = Math.max(5, Math.round(s*24)); frames += (5 - (frames%17))%17;
+  const turbo = $("turbo").checked;
+  const modelSrc = turbo ? ["2",0] : ["1",0];
+  return {
+    "1": {class_type:"UNETLoader", inputs:{unet_name:"minimax_h3_fl2va_pruned_int8_convrot.safetensors", weight_dtype:"default"}},
+    "2": {class_type:"LoraLoaderModelOnly", inputs:{lora_name:"minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors", strength_model:+$("loraStrength").value||1.0, model:["1",0]}},
+    "3": {class_type:"CLIPLoader", inputs:{clip_name:"qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors", type:"minimax", device:"default"}},
+    "4": {class_type:"VAELoader", inputs:{vae_name:"minimax_h3_video_vae_fp16.safetensors"}},
+    "5": {class_type:"VAELoader", inputs:{vae_name:"minimax_h3_audio_vae_fp32.safetensors"}},
+    "6": {class_type:"MiniMaxH3ImageToVideo", inputs:{clip:["3",0], vae:["4",0], prompt:$("prompt").value, width:+w, height:+h, length:frames}},
+    "7": {class_type:"RandomNoise", inputs:{noise_seed:+$("seed").value||0}},
+    "8": {class_type:"KSamplerSelect", inputs:{sampler_name:"res_multistep"}},
+    "9": {class_type:"BasicScheduler", inputs:{scheduler:"simple", steps: turbo?8:20, denoise:1.0, model:modelSrc}},
+    "10": {class_type:"BasicGuider", inputs:{model:modelSrc, conditioning:["6",0]}},
+    "11": {class_type:"SamplerCustomAdvanced", inputs:{noise:["7",0], guider:["10",0], sampler:["8",0], sigmas:["9",0], latent_image:["6",1]}},
+    "12": {class_type:"VAEDecode", inputs:{samples:["11",0], vae:["4",0]}},
+    "13": {class_type:"VAEDecodeAudio", inputs:{samples:["11",0], vae:["5",0]}},
+    "14": {class_type:"CreateVideo", inputs:{images:["12",0], audio:["13",0], fps:24}},
+    "15": {class_type:"SaveVideo", inputs:{video:["14",0], filename_prefix:"video/H3_t2v", format:"auto", codec:"auto"}}
+  };
+}
+
+let comfyOnline = false;
+
+async function connect(){
+  saveApi();
+  $("dotConn").className = "dot off"; $("connText").textContent = "连接中…";
+  try{
+    const r = await fetch(nb("/system_stats"), {cache:"no-store", signal:AbortSignal.timeout(8000)});
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    const st = await r.json();
+    markOnline(st);
+  }catch(e){
+    comfyOnline = false;
+    $("dotConn").className = "dot off";
+    if(instOn === false){
+      $("connText").textContent = "实例未开机";
+      return;
+    }
+    const host = ($("apiBase").value.match(/^https?:\/\/[^\/]+/)||[""])[0];
+    $("connText").textContent = !$("apiBase").value.trim() ? "API 地址为空" : ("连接失败: " + (e.message||e) + " · " + host);
+    if(!$("apiBase").value.trim()) showAdv();
+  }
+}
+
+function markOnline(st){
+  if(!comfyOnline){
+    comfyOnline = true;
+    openWs();
+  }
+  $("dotConn").className = "dot on";
+  $("connText").textContent = "已连接 " + st.system.comfyui_version;
+  const d = st.devices && st.devices[0];
+  $("gpuText").textContent = d ? d.name : "-";
+  $("vramText").textContent = d ? (d.vram_free/1073741824).toFixed(1) + " / " + (d.vram_total/1073741824).toFixed(1) + " GB" : "-";
+}
+
+function openWs(){
+  if(ws){ try{ws.close()}catch(e){} }
+  const base = api("").replace(/^http/,"ws");
+  ws = new WebSocket(base + "/ws?clientId=" + clientId);
+  ws.onmessage = ev => {
+    const m = JSON.parse(ev.data);
+    if(curPid && m.data && m.data.prompt_id && m.data.prompt_id !== curPid) return;
+    if(m.type==="progress" && running){
+      const p = Math.round(100*m.data.value/m.data.max);
+      curProg = p; renderQueue();
+      $("progBar").style.width = p + "%";
+      $("nodeLine").textContent = "采样中 " + m.data.value + " / " + m.data.max + " 步";
+    }else if(m.type==="executing" && m.data.node){
+      if(m.data.display_node !== m.data.node) return;
+      if(!running) return;
+      $("nodeLine").textContent = "执行节点 " + (NODE_NAMES[m.data.node] || m.data.node);
+    }else if(m.type==="executing" && m.data.node===null && running){
+      curProg = 100; renderQueue();
+      $("progBar").style.width = "100%";
+    }
+  };
+  ws.onerror = ()=>{};
+}
+
+async function pollStatus(){
+  try{
+    const st = await (await fetch(nb("/system_stats"), {cache:"no-store", signal:AbortSignal.timeout(6000)})).json();
+    markOnline(st);
+    const q = await (await fetch(nb("/queue"), {cache:"no-store", signal:AbortSignal.timeout(6000)})).json();
+    $("queueText").textContent = q.queue_running.length + " 运行 / " + q.queue_pending.length + " 排队";
+  }catch(e){
+    if(instOn === false){
+      comfyOnline = false;
+      $("dotConn").className = "dot off";
+      if($("connText").textContent !== "实例未开机") $("connText").textContent = "实例未开机";
+      setTimeout(pollStatus, 5000);
+      return;
+    }
+    if(comfyOnline || $("connText").textContent.startsWith("已连接")){
+      comfyOnline = false;
+      $("dotConn").className = "dot off";
+      $("connText").textContent = "连接断开: " + (e.message||e);
+    }
+  }
+  setTimeout(pollStatus, 5000);
+}
+
+const NODE_NAMES = {
+  "1":"加载 DiT","2":"加载 Turbo LoRA","3":"加载文本编码器","4":"加载视频 VAE","5":"加载音频 VAE",
+  "6":"MiniMaxH3ImageToVideo（文本编码）","7":"随机噪声","9":"调度器","10":"引导","11":"采样（Diffusion）",
+  "12":"视频 VAE 解码","13":"音频 VAE 解码","14":"合成视频","15":"保存"
+};
+
+async function generate(){
+  $("errBox").style.display = "none";
+  const wf = buildWorkflow();
+  $("genBtn").disabled = true; $("genBtn").textContent = "提交中…";
+  try{
+    const r = await fetch(api("/prompt"), {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({prompt: wf, client_id: clientId})
+    });
+    const j = await r.json();
+    if(j.node_errors && Object.keys(j.node_errors).length){
+      throw new Error("节点校验失败:\n" + JSON.stringify(j.node_errors, null, 2));
+    }
+    if(!j.prompt_id) throw new Error("提交失败: " + JSON.stringify(j).slice(0,500));
+    const label = $("prompt").value.trim().replace(/\s+/g," ").slice(0,24);
+    if(running){
+      taskQueue.push({pid: j.prompt_id, label}); saveActive();
+      $("prompt").value = "";
+      $("genBtn").disabled = false; $("genBtn").textContent = "加入队列";
+      $("nodeLine").textContent = "已加入队列（共 " + (taskQueue.length+1) + " 个任务）";
+      renderQueue();
+    }else{
+      curLabel = label;
+      startRun(j.prompt_id);
+    }
+  }catch(e){
+    $("errBox").textContent = String(e.message||e); $("errBox").style.display = "block";
+    $("genBtn").disabled = false; $("genBtn").textContent = "生成视频";
+  }
+}
+
+function startRun(pid, resumed){
+  running = true; curPid = pid; startT = resumed ? startT : Date.now();
+  resumeFails = 0;
+  curProg = 0; interrupting = false;
+  saveActive();
+  const seq = ++runSeq;
+  $("progBar").style.width = "0%";
+  $("nodeLine").textContent = resumed ? "恢复追踪中…" : "排队/加载模型中…";
+  $("genBtn").disabled = false; $("genBtn").textContent = "加入队列";
+  $("videoBox").innerHTML = '<div class="placeholder">生成中…</div>';
+  renderQueue();
+  costTimer = setInterval(()=>{
+    const el = (Date.now()-startT)/1000;
+    $("costLive").innerHTML = fmtElapsed(el);
+  }, 1000);
+  waitForResult(pid, 0, resumed, seq);
+}
+
+let resumeFails = 0, runSeq = 0, interrupting = false;
+async function waitForResult(pid, tries, resumed, seq){
+  if(tries > 720){ finishRun(null, "超时（2 小时）"); return; }
+  try{
+    const h = await (await fetch(nb("/history/"+pid), {cache:"no-store", signal:AbortSignal.timeout(8000)})).json();
+    const item = h[pid];
+    if(item){
+      if(item.status && item.status.completed){
+        if(item.status.status_str==="error"){
+          const interrupted = Object.values(item.status.messages||[]).some(m=>m[0]==="execution_interrupted");
+          if(interrupted){ finishRun(null, "已中断"); return; }
+          const msgs = Object.values(item.status.messages||[]).filter(m=>m[0]==="execution_error");
+          finishRun(null, msgs.length? JSON.stringify(msgs[0][1],null,2).slice(0,3000) : "执行错误");
+          return;
+        }
+        const out = item.outputs && Object.values(item.outputs).find(o=>o.videos||o.gifs||o.images);
+        if(out){
+          let t0 = null, t1 = null;
+          for(const m of (item.status.messages||[])){
+            if(m[0]==="execution_start") t0 = m[1].timestamp;
+            if(m[0]==="execution_success") t1 = m[1].timestamp;
+          }
+          const f = (out.videos||out.gifs||out.images)[0];
+          finishRun(api("/view?filename="+encodeURIComponent(f.filename)+"&subfolder="+(f.subfolder||"")+"&type="+(f.type||"output")), null, f.filename, (t0&&t1)?(t1-t0)/1000:null);
+          return;
+        }
+      }
+    }else if(resumed && tries >= 10){
+      const q = await (await fetch(nb("/queue"), {cache:"no-store", signal:AbortSignal.timeout(8000)})).json();
+      if(!q.queue_running.concat(q.queue_pending).some(it=>it[1]===pid)){
+        finishRun(null, "任务记录已丢失（实例可能重启过）"); return;
+      }
+      resumeFails = 0;
+    }
+  }catch(e){
+    if(resumed){
+      resumeFails++;
+      if(resumeFails >= 5){ finishRun(null, "ComfyUI 无法连接（实例可能已关机）"); return; }
+    }
+  }
+  setTimeout(()=>{ if(seq === runSeq) waitForResult(pid, tries+1, resumed, seq); }, 3000);
+}
+
+function finishRun(url, errMsg, fname, serverElapsed){
+  running = false; clearInterval(costTimer);
+  localStorage.removeItem(AKEY);
+  $("genBtn").disabled = false; $("genBtn").textContent = "生成视频";
+  const el = serverElapsed || (Date.now()-startT)/1000;
+  if(errMsg){
+    $("progBar").style.width = "0%";
+    $("nodeLine").textContent = "失败";
+    $("errBox").textContent = errMsg; $("errBox").style.display = "block";
+    $("videoBox").innerHTML = '<div class="placeholder">生成失败，详见错误信息</div>';
+  }else{
+    $("nodeLine").textContent = "完成 · "+Math.floor(el/60)+":"+String(Math.floor(el%60)).padStart(2,"0");
+    $("videoBox").innerHTML = '<video controls autoplay loop src="'+url+'"></video>';
+    const entry = {pid: curPid, ts: Date.now(), secs: el, url: url, fname: fname||""};
+    const list = loadHist().filter(x=>x.pid!==entry.pid);
+    list.unshift(entry); saveHist(list);
+    addHistEntry(entry, true);
+  }
+  $("costLive").innerHTML = fmtElapsed(el);
+  if(taskQueue.length){
+    const next = taskQueue.shift(); saveActive();
+    curLabel = next.label || "";
+    startRun(next.pid);
+  }else{
+    renderQueue();
+  }
+}
+
+function addHistEntry(entry, prepend){
+  const h = document.createElement("div");
+  h.className = "hist";
+  h.dataset.pid = entry.pid;
+  const d = new Date(entry.ts);
+  h.innerHTML = "<b>"+d.toLocaleTimeString()+"</b> · "+Math.floor(entry.secs/60)+":"+String(Math.floor(entry.secs%60)).padStart(2,"0")+
+    " · <a href=\""+entry.url+"\" download>"+ (entry.fname||"下载") +"</a> · <a href=\""+entry.url+"\" target=\"_blank\">新窗口</a>"+
+    '<a class="hBtn" href="'+entry.url+'" download title="下载" onclick="return dlVideo(this, \''+entry.pid+'\')">↓</a>'+
+    '<button class="hBtn del" title="删除" onclick="delHist(\''+entry.pid+'\')">✕</button>';
+  if(prepend) $("histList").prepend(h); else $("histList").appendChild(h);
+}
+
+async function dlVideo(a, pid){
+  try{
+    const u = new URL(a.href);
+    u.searchParams.set("_", Date.now());
+    const r = await fetch(u, {cache:"no-store"});
+    if(r.ok && r.body && r.body.cancel) r.body.cancel();
+    if(!r.ok){
+      $("pwrHint").textContent = "文件已不存在（记录已过期）";
+      setTimeout(()=>{ if($("pwrHint").textContent==="文件已不存在（记录已过期）") $("pwrHint").textContent=""; }, 4000);
+      return false;
+    }
+  }catch(e){}
+  return true;
+}
+
+async function delHist(pid){
+  if(!await uiConfirm("删除该记录？（本地+云端）", true)) return;
+  const ent = loadHist().find(x=>x.pid===pid);
+  if(ent){
+    try{
+      const u = new URL(ent.url);
+      const fn = u.searchParams.get("filename");
+      const sub = u.searchParams.get("subfolder") || "";
+      if(fn) await fetch(api("/h3ui/delete"), {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({delete:[sub ? sub+"/"+fn : fn]})});
+    }catch(err){}
+  }
+  try{ await fetch(api("/history"), {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({delete:[pid]})}); }catch(err){}
+  saveHist(loadHist().filter(x=>x.pid!==pid));
+  [...$("histList").children].forEach(c=>{ if(c.dataset.pid===pid) c.remove(); });
+  if(ent && $("videoBox").innerHTML.includes(ent.url)) $("videoBox").innerHTML = '<div class="placeholder">已删除</div>';
+}
+
+connect();
+pollStatus();
+restoreOnLoad();
+pollInstStatus();
+if(dlReady()){ $("loginHint").textContent = "已登录"; loadInstances(); }
+</script>
+<div id="cfmMask"><div id="cfmBox"><p id="cfmMsg"></p><div id="cfmBtns"><button id="cfmCancel">取消</button><button id="cfmOk">确定</button></div></div></div>
+</body>
+</html>

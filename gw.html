@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <meta name="referrer" content="never">
+    <script>(function(){
+        let str = localStorage.getItem("mainfestData");
+        if(str){
+            let mainfest = JSON.parse(str);
+            if(mainfest){
+                let data = {"short_name": mainfest.name,"name": mainfest.name,"icons":[{"src": mainfest.logo,"type": "image/png","sizes":mainfest.size}],"start_url": window.location.origin,"display": "standalone"};
+                let mainfestUrl = URL.createObjectURL(new Blob([JSON.stringify(data)],{type:"application/json"}));
+                document.write("<link rel=\"manifest\" href=\""+mainfestUrl+"\"/>");
+            }
+        }
+
+    })()</script>
+    <script>"serviceWorker" in navigator&&window.addEventListener("load",(()=>{navigator.serviceWorker.register("/serviceWorker.js").then((e=>console.log("Success: ",e.scope))).catch((e=>console.log("Failure: ",e)))}))</script>
+    <script src="/modules/win11/init.js?from=element&plugins=win11"></script>
+</head>
+<body style="display:none;" data-theme="light" data-sepia="false">
+<div id="app">
+    <app ref="app"></app>
+</div>
+</body>
+<script>
+    (function(){
+        let version = window&&window.utils&&window.utils.config&&window.utils.config.version;
+        if(!version){
+            version = "1.0.0";
+        }
+        window.InitVueComponent = function (app){
+            let zjs = ["app","folder-tree","edgeBrowser","taskbar","window","desktop","right-menu","fileExplorer","login",
+                "settings","settings-user","store","commonApp","properties","upload-task","personal","file-select",
+                "settings-webdav","settings-system","settings-update","settings-business","settings-sponsor","settings-dbcache",
+                "settings-log","settings-language","yz-check","sync-drive","sync-local","offlinedown","image-viewer",
+                "settings-dept","share-edit","settings-notice","settings-nat","settings-commercial","settings-commercial-user",
+                "settings-commercial-zhuan","settings-direct","settings-client","blossom-system","download","pack-down-task",
+                "copy-zl","settings-resource"];
+            for(let i=0;i<zjs.length;i++){
+                let zj = zjs[i];
+                app.component(zj, Vue.defineAsyncComponent(async function (){
+                    let zjObj = await utils.moduleImport('/modules/win11/components/'+zj+'.js?jsv='+version);
+                    await webos.user.setLanguageMap('/modules/win11/components',zj);
+                    zjObj.default.methods.lang = function(key,...params){
+                        return webos.user.getLanguageValue(window.allLangMap[zj],key,...params);
+                    }
+                    return zjObj;
+                }));
+            }
+        };
+        utils.delayAction(function (){
+            return window && window.webos && window.webos.user;
+        },async function (){
+            Vue.app({
+                mounted:async function(){
+                    document.body.style.display = "";
+                    utils.delayAction(function (){
+                        return window.webos && webos.context && webos.context.get("install") != undefined;
+                    },function (){
+                        if(!webos.context.get("install")){
+                            window.location.href = "install.html";
+                        }
+                    });
+                }
+            });
+        });
+    })()
+</script>
+</html>

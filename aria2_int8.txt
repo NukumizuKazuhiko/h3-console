@@ -1,0 +1,10 @@
+https://modelscope.cn/models/Comfy-Org/MiniMax-H3/resolve/master/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors
+  out=diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors
+https://modelscope.cn/models/Comfy-Org/MiniMax-H3/resolve/master/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors
+  out=text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors
+https://modelscope.cn/models/Comfy-Org/MiniMax-H3/resolve/master/vae/minimax_h3_video_vae_fp16.safetensors
+  out=vae/minimax_h3_video_vae_fp16.safetensors
+https://modelscope.cn/models/Comfy-Org/MiniMax-H3/resolve/master/vae/minimax_h3_audio_vae_fp32.safetensors
+  out=vae/minimax_h3_audio_vae_fp32.safetensors
+https://modelscope.cn/models/Comfy-Org/MiniMax-H3/resolve/master/loras/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors
+  out=loras/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors
