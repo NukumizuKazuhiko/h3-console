@@ -36,7 +36,8 @@ curl -fsSL https://raw.githubusercontent.com/NukumizuKazuhiko/h3-console/main/bo
 说明：
 - `start_h3.sh` 中的 `--enable-cors-header` 为浏览器/APK 跨域访问所必需，不可省略
 - 开机自启原理：AutoDL 容器开机由 supervisord 执行 `/etc/autodl.sh`，脚本等 15s 后探测 6006 端口，已有服务则跳过，否则后台拉起 `start_h3.sh`（日志：`/root/autodl-tmp/comfyui_h3.log`）；开机到服务就绪约需 50~80s
-- `h3ui_api.py` 提供 `POST /h3ui/delete`（删除 `output/` 下文件，带路径穿越防护），供控制台删除云端视频
+- `h3ui_api.py` 提供 `POST /h3ui/delete`（删除 `output/` 下文件，带路径穿越防护），供控制台删除云端视频；`GET /h3ui/stats`（CPU/GPU 利用率采样）供控制台"性能监测"面板，缺失时面板显示 `--`
+- 更新 `h3ui_api.py` 后需重启 ComfyUI 生效；custom_nodes 端点只在 ComfyUI 启动时加载
 
 ## APK 构建
 
