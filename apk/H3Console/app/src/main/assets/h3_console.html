@@ -230,7 +230,7 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
     <select id="dlInst" style="flex:1"><option value="" data-i18n="pickInst">— 请先获取列表 —</option></select>
     <button class="ghost" onclick="loadInstances()" data-i18n="fetchList">获取列表</button>
   </div>
-  <div class="status" style="margin-top:8px">
+  <div class="status" id="statusBox" style="margin-top:8px">
     <span><span class="dot off" id="dotInst"></span><span id="instText" data-i18n="unknown">未知</span></span>
     <span><span class="dot off" id="dotConn"></span><span id="connText" data-i18n="notConnected">未连接</span></span>
     <span><span data-i18n="vram">显存</span> <b id="vramText">-</b></span>
@@ -258,11 +258,11 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
     <label data-i18n="apiAddr">ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
   </div>
-  <div class="hint">v1.19</div>
+  <div class="hint">v1.20</div>
 </div>
 
 <div class="panel">
-  <h2 data-i18n="promptSec">提示词</h2>
+  <h2 data-i18n="createSec">创作</h2>
   <div class="frameRow">
     <div>
       <label data-i18n="firstFrame">首帧图片（可选）</label>
@@ -290,13 +290,6 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
     <button class="ghost" onclick="fillPreset(2)" data-i18n="preset2">霓虹夜街</button>
     <button class="ghost" onclick="clearPrompt()" data-i18n="clear">清空</button>
   </div>
-</div>
-
-</div>
-<div class="col">
-
-<div class="panel">
-  <h2 data-i18n="paramSec">参数</h2>
   <label data-i18n="resolution">分辨率</label>
   <select id="resSel">
     <option value="608x352">608 × 352</option>
@@ -327,6 +320,9 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
   </div>
   <div class="hint" data-i18n="turboHint">关闭 Turbo 用 20 步采样，速度约 1/2.5</div>
 </div>
+
+</div>
+<div class="col">
 
 <div class="panel">
   <h2 data-i18n="genSec">生成</h2>
@@ -783,7 +779,7 @@ zh: {
  tasksWillDrop:"当前有 {n} 个任务，关机将全部丢弃", confirmDropShutdown:"确认中断全部任务并关机？",
  setting:"设置中…", shutdownIn:"{n} 分钟后关机", setFail:"设置失败：", timedCancelled:"已取消定时", cancelFail:"取消失败：",
  noForward:"未从实例数据中自动找到转发地址，请手动填写 ComfyUI API 地址",
- promptSec:"提示词", promptPh:"描述画面、镜头与音频；英文效果最佳，可用 embedding: 风格嵌入",
+ createSec:"创作", promptSec:"提示词", promptPh:"描述画面、镜头与音频；英文效果最佳，可用 embedding: 风格嵌入",
  firstFrame:"首帧图片（可选）", lastFrame:"尾帧图片（可选）", uploadFail:"图片上传失败：", clearImg:"清除已选图片", pickImg:"选择图片",
  preset0:"都市追逐", preset1:"森林日出", preset2:"霓虹夜街", clear:"清空",
  paramSec:"参数", resolution:"分辨率", duration:"时长", durSec:"{s} 秒", durFrames:"{f} 帧",
@@ -824,7 +820,7 @@ en: {
  tasksWillDrop:"{n} task(s) in progress, they will be dropped", confirmDropShutdown:"Abort all tasks and shut down?",
  setting:"Setting…", shutdownIn:"Shutdown in {n} min", setFail:"Set failed: ", timedCancelled:"Timer cancelled", cancelFail:"Cancel failed: ",
  noForward:"No forward URL found in instance data, please enter the ComfyUI API URL manually",
- promptSec:"Prompt", promptPh:"Describe scene, camera and audio; English works best, supports embedding: style presets",
+ createSec:"Create", promptSec:"Prompt", promptPh:"Describe scene, camera and audio; English works best, supports embedding: style presets",
  firstFrame:"First frame (optional)", lastFrame:"Last frame (optional)", uploadFail:"Image upload failed: ", clearImg:"Clear selected image", pickImg:"Choose image",
  preset0:"City chase", preset1:"Forest sunrise", preset2:"Neon night", clear:"Clear",
  paramSec:"Params", resolution:"Resolution", duration:"Duration", durSec:"{s}s", durFrames:"{f} frames",
@@ -1259,6 +1255,7 @@ let comfyOnline = false;
 
 async function connect(){
   saveApi();
+  $("statusBox").style.display = "";
   $("dotConn").className = "dot off"; $("connText").textContent = t("connecting");
   try{
     const r = await fetch(nb("/system_stats"), {cache:"no-store", signal:AbortSignal.timeout(8000)});
@@ -1283,6 +1280,7 @@ function markOnline(st){
     comfyOnline = true;
     openWs();
   }
+  $("statusBox").style.display = "none";
   $("dotConn").className = "dot on";
   $("connText").textContent = t("connected") + st.system.comfyui_version;
   const d = st.devices && st.devices[0];
@@ -1325,6 +1323,7 @@ async function pollStatus(){
   }catch(e){
     if(instOn === false){
       comfyOnline = false;
+      $("statusBox").style.display = "";
       $("dotConn").className = "dot off";
       if($("connText").textContent !== t("instOff")) $("connText").textContent = t("instOff");
       setTimeout(pollStatus, 5000);
@@ -1332,6 +1331,7 @@ async function pollStatus(){
     }
     if(comfyOnline || $("connText").textContent.startsWith(t("connected"))){
       comfyOnline = false;
+      $("statusBox").style.display = "";
       $("dotConn").className = "dot off";
       $("connText").textContent = t("connLost") + (e.message||e);
     }
