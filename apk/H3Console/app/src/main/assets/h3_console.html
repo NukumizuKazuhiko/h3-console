@@ -188,12 +188,12 @@ html[data-theme="light"] .imgBtn:hover{background:rgba(15,168,166,.07)}
 .ts-wrapper.single .ts-control::after{border:0;content:"";position:absolute;right:13px;top:50%;width:12px;height:8px;margin-top:-4px;background:var(--selArrow) no-repeat center/12px 8px}
 .ts-wrapper.single.dropdown-active .ts-control::after{transform:rotate(180deg)}
 .ts-wrapper.single.input-active .ts-control{background:var(--panel2);cursor:pointer}
-.ts-wrapper .ts-control .item{color:var(--text)}
+.ts-wrapper .ts-control .item{color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ts-wrapper .ts-control>input{font-size:13px;color:var(--text)}
 .ts-wrapper .ts-control>input::placeholder{color:var(--dim);opacity:1}
 .ts-dropdown{background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:0 16px 48px rgba(0,0,0,.4);margin-top:6px;padding:6px;z-index:1200;color:var(--text);font-size:13px}
 html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
-.ts-dropdown .option{padding:8px 12px;border-radius:8px;color:var(--text);opacity:1;line-height:1.5}
+.ts-dropdown .option{padding:8px 12px;border-radius:8px;color:var(--text);opacity:1;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ts-dropdown .option.active{background:var(--panel2);color:var(--text)}
 .ts-dropdown .option.selected{color:var(--accent)}
 .ts-dropdown .spinner{display:none}
@@ -258,7 +258,7 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
     <label data-i18n="apiAddr">ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
   </div>
-  <div class="hint">v1.17</div>
+  <div class="hint">v1.18</div>
 </div>
 
 <div class="panel">
@@ -1073,6 +1073,7 @@ let instListCache = [];
 let instPrice = 0, instBootAt = null;
 
 function stText(s){ return (I18N[LANG].st && I18N[LANG].st[s]) || s; }
+function truncName(s, n){ s = String(s); return s.length > n ? s.slice(0, n-1) + "…" : s; }
 
 function renderBill(){
   const el = $("billLine");
@@ -1131,7 +1132,7 @@ function renderInstOptions(){
   const ts = sel.tomselect;
   if(ts){
     ts.clearOptions();
-    ts.addOption(instListCache.map(it=>({value:it.uuid, text:t("instStatus", {name: it.name || it.uuid, st: stText(it.status)})})));
+    ts.addOption(instListCache.map(it=>({value:it.uuid, text:t("instStatus", {name: truncName(it.name || it.uuid, 18), st: stText(it.status)})})));
     ts.refreshOptions(false);
     ts.setValue(cur && instListCache.some(i=>i.uuid===cur) ? cur : "", true);
     return;
@@ -1140,7 +1141,7 @@ function renderInstOptions(){
   for(const it of instListCache){
     const o = document.createElement("option");
     o.value = it.uuid;
-    o.textContent = t("instStatus", {name: it.name || it.uuid, st: stText(it.status)});
+    o.textContent = t("instStatus", {name: truncName(it.name || it.uuid, 18), st: stText(it.status)});
     sel.appendChild(o);
   }
   if(cur && [...sel.options].some(o=>o.value===cur)) sel.value = cur;
