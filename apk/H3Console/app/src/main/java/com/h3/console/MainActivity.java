@@ -71,6 +71,15 @@ public class MainActivity extends Activity {
         public void openLogin() {
             startActivityForResult(new Intent(MainActivity.this, LoginActivity.class), 7);
         }
+
+        @JavascriptInterface
+        public void openUrl(String url) {
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+            } catch (Exception e) {
+                Toast.makeText(MainActivity.this, "无法打开链接", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     @Override
