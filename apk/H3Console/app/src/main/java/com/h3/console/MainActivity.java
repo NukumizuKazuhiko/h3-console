@@ -10,6 +10,8 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.view.KeyEvent;
 import android.webkit.JavascriptInterface;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -25,6 +27,7 @@ import java.util.Locale;
 public class MainActivity extends Activity {
 
     private WebView webView;
+    private ValueCallback<Uri[]> filePathCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,6 +39,23 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(true);
         s.setMediaPlaybackRequiresUserGesture(false);
         webView.setWebViewClient(new WebViewClient());
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> cb, FileChooserParams params) {
+                if (filePathCallback != null) filePathCallback.onReceiveValue(null);
+                filePathCallback = cb;
+                Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+                i.addCategory(Intent.CATEGORY_OPENABLE);
+                i.setType("image/*");
+                try {
+                    startActivityForResult(Intent.createChooser(i, "选择图片"), 9);
+                } catch (Exception e) {
+                    filePathCallback = null;
+                    return false;
+                }
+                return true;
+            }
+        });
         webView.setDownloadListener(this::download);
         webView.addJavascriptInterface(new Bridge(), "H3App");
         setContentView(webView);
@@ -56,6 +76,17 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 9) {
+            Uri[] res = null;
+            if (resultCode == RESULT_OK && data != null && data.getData() != null) {
+                res = new Uri[]{data.getData()};
+            }
+            if (filePathCallback != null) {
+                filePathCallback.onReceiveValue(res);
+                filePathCallback = null;
+            }
+            return;
+        }
         if (requestCode == 7 && resultCode == RESULT_OK && data != null) {
             String t = data.getStringExtra("token");
             if (t != null && !t.isEmpty()) {

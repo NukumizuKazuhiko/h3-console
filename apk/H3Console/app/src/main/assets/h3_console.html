@@ -40,7 +40,7 @@ h1{font-size:20px;font-weight:600;margin-bottom:4px}
 .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px}
 .panel h2{font-size:13px;color:var(--dim);font-weight:600;margin-bottom:10px;letter-spacing:.05em}
 label{display:block;font-size:12px;color:var(--dim);margin:10px 0 4px}
-textarea,input[type=text],input[type=number],select{
+textarea,input[type=text],input[type=number],input[type=file],select{
   width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:6px;
   color:var(--text);padding:8px 10px;font-size:13px;font-family:inherit;
 }
@@ -166,11 +166,29 @@ hist-item{display:block}
     <label data-i18n="apiAddr">ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
   </div>
-  <div class="hint">v1.1</div>
+  <div class="hint">v1.2</div>
 </div>
 
 <div class="panel">
   <h2 data-i18n="promptSec">提示词</h2>
+  <label data-i18n="workflow">工作流</label>
+  <select id="wfSel">
+    <option value="t2v" data-i18n="wfT2V">文生视频</option>
+    <option value="i2v" data-i18n="wfI2V">图生视频（首帧）</option>
+    <option value="flf2v" data-i18n="wfFLF2V">首尾帧</option>
+  </select>
+  <div id="imgBox" style="display:none">
+    <div class="grid2">
+      <div>
+        <label data-i18n="firstFrame">首帧图片</label>
+        <input type="file" id="ffFile" accept="image/*">
+      </div>
+      <div id="lfWrap" style="display:none">
+        <label data-i18n="lastFrame">尾帧图片</label>
+        <input type="file" id="lfFile" accept="image/*">
+      </div>
+    </div>
+  </div>
   <textarea id="prompt" data-i18n-ph="promptPh" placeholder="描述画面、镜头与音频；可用 embedding: 风格嵌入"></textarea>
   <div class="presetBtns">
     <button class="ghost" onclick="fillPreset(0)" data-i18n="preset0">都市追逐</button>
@@ -260,6 +278,8 @@ zh: {
  setting:"设置中…", shutdownIn:"{n} 分钟后关机", setFail:"设置失败：", timedCancelled:"已取消定时", cancelFail:"取消失败：",
  noForward:"未从实例数据中自动找到转发地址，请手动填写 ComfyUI API 地址",
  promptSec:"提示词", promptPh:"描述画面、镜头与音频；英文效果最佳，可用 embedding: 风格嵌入",
+ workflow:"工作流", wfT2V:"文生视频", wfI2V:"图生视频（首帧）", wfFLF2V:"首尾帧",
+ firstFrame:"首帧图片", lastFrame:"尾帧图片", needFirst:"请选择首帧图片", needLast:"请选择尾帧图片", uploadFail:"图片上传失败：",
  preset0:"都市追逐", preset1:"森林日出", preset2:"霓虹夜街", clear:"清空",
  paramSec:"参数", resolution:"分辨率", duration:"时长", durSec:"{s} 秒", durFrames:"{f} 帧",
  turbo:"Turbo 加速", lora8:"8 步 LoRA", loraStrength:"LoRA 强度", seed:"种子",
@@ -299,6 +319,8 @@ en: {
  setting:"Setting…", shutdownIn:"Shutdown in {n} min", setFail:"Set failed: ", timedCancelled:"Timer cancelled", cancelFail:"Cancel failed: ",
  noForward:"No forward URL found in instance data, please enter the ComfyUI API URL manually",
  promptSec:"Prompt", promptPh:"Describe scene, camera and audio; English works best, supports embedding: style presets",
+ workflow:"Workflow", wfT2V:"Text to video", wfI2V:"Image to video (first frame)", wfFLF2V:"First & last frame",
+ firstFrame:"First frame", lastFrame:"Last frame", needFirst:"Select a first-frame image", needLast:"Select a last-frame image", uploadFail:"Image upload failed: ",
  preset0:"City chase", preset1:"Forest sunrise", preset2:"Neon night", clear:"Clear",
  paramSec:"Params", resolution:"Resolution", duration:"Duration", durSec:"{s}s", durFrames:"{f} frames",
  turbo:"Turbo", lora8:"8-step LoRA", loraStrength:"LoRA strength", seed:"Seed",
@@ -684,31 +706,6 @@ async function cancelTimedShutdown(){
   }catch(e){ $("pwrHint").textContent = t("cancelFail") + e.message; }
 }
 
-function buildWorkflow(){
-  const [w,h] = $("resSel").value.split("x");
-  const s = +$("dur").value;
-  let frames = Math.max(5, Math.round(s*24)); frames += (5 - (frames%17))%17;
-  const turbo = $("turbo").checked;
-  const modelSrc = turbo ? ["2",0] : ["1",0];
-  return {
-    "1": {class_type:"UNETLoader", inputs:{unet_name:"minimax_h3_fl2va_pruned_int8_convrot.safetensors", weight_dtype:"default"}},
-    "2": {class_type:"LoraLoaderModelOnly", inputs:{lora_name:"minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors", strength_model:+$("loraStrength").value||1.0, model:["1",0]}},
-    "3": {class_type:"CLIPLoader", inputs:{clip_name:"qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors", type:"minimax", device:"default"}},
-    "4": {class_type:"VAELoader", inputs:{vae_name:"minimax_h3_video_vae_fp16.safetensors"}},
-    "5": {class_type:"VAELoader", inputs:{vae_name:"minimax_h3_audio_vae_fp32.safetensors"}},
-    "6": {class_type:"MiniMaxH3ImageToVideo", inputs:{clip:["3",0], vae:["4",0], prompt:$("prompt").value, width:+w, height:+h, length:frames}},
-    "7": {class_type:"RandomNoise", inputs:{noise_seed:+$("seed").value||0}},
-    "8": {class_type:"KSamplerSelect", inputs:{sampler_name:"res_multistep"}},
-    "9": {class_type:"BasicScheduler", inputs:{scheduler:"simple", steps: turbo?8:20, denoise:1.0, model:modelSrc}},
-    "10": {class_type:"BasicGuider", inputs:{model:modelSrc, conditioning:["6",0]}},
-    "11": {class_type:"SamplerCustomAdvanced", inputs:{noise:["7",0], guider:["10",0], sampler:["8",0], sigmas:["9",0], latent_image:["6",1]}},
-    "12": {class_type:"VAEDecode", inputs:{samples:["11",0], vae:["4",0]}},
-    "13": {class_type:"VAEDecodeAudio", inputs:{samples:["11",0], vae:["5",0]}},
-    "14": {class_type:"CreateVideo", inputs:{images:["12",0], audio:["13",0], fps:24}},
-    "15": {class_type:"SaveVideo", inputs:{video:["14",0], filename_prefix:"video/H3_t2v", format:"auto", codec:"auto"}}
-  };
-}
-
 let comfyOnline = false;
 
 async function connect(){
@@ -791,11 +788,59 @@ async function pollStatus(){
   setTimeout(pollStatus, 5000);
 }
 
+async function uploadImg(file){
+  const fd = new FormData();
+  fd.append("image", file, file.name);
+  fd.append("overwrite", "true");
+  const r = await fetch(api("/upload/image"), {method:"POST", body: fd});
+  if(!r.ok) throw new Error(t("uploadFail") + r.status);
+  const j = await r.json();
+  return j.subfolder ? j.subfolder + "/" + j.name : j.name;
+}
+
+function buildWorkflow(){
+  const [w,h] = $("resSel").value.split("x");
+  const s = +$("dur").value;
+  let frames = Math.max(5, Math.round(s*24)); frames += (5 - (frames%17))%17;
+  const turbo = $("turbo").checked;
+  const modelSrc = turbo ? ["2",0] : ["1",0];
+  return {
+    "1": {class_type:"UNETLoader", inputs:{unet_name:"minimax_h3_fl2va_pruned_int8_convrot.safetensors", weight_dtype:"default"}},
+    "2": {class_type:"LoraLoaderModelOnly", inputs:{lora_name:"minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors", strength_model:+$("loraStrength").value||1.0, model:["1",0]}},
+    "3": {class_type:"CLIPLoader", inputs:{clip_name:"qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors", type:"minimax", device:"default"}},
+    "4": {class_type:"VAELoader", inputs:{vae_name:"minimax_h3_video_vae_fp16.safetensors"}},
+    "5": {class_type:"VAELoader", inputs:{vae_name:"minimax_h3_audio_vae_fp32.safetensors"}},
+    "6": {class_type:"MiniMaxH3ImageToVideo", inputs:{clip:["3",0], vae:["4",0], prompt:$("prompt").value, width:+w, height:+h, length:frames}},
+    "7": {class_type:"RandomNoise", inputs:{noise_seed:+$("seed").value||0}},
+    "8": {class_type:"KSamplerSelect", inputs:{sampler_name:"res_multistep"}},
+    "9": {class_type:"BasicScheduler", inputs:{scheduler:"simple", steps: turbo?8:20, denoise:1.0, model:modelSrc}},
+    "10": {class_type:"BasicGuider", inputs:{model:modelSrc, conditioning:["6",0]}},
+    "11": {class_type:"SamplerCustomAdvanced", inputs:{noise:["7",0], guider:["10",0], sampler:["8",0], sigmas:["9",0], latent_image:["6",1]}},
+    "12": {class_type:"VAEDecode", inputs:{samples:["11",0], vae:["4",0]}},
+    "13": {class_type:"VAEDecodeAudio", inputs:{samples:["11",0], vae:["5",0]}},
+    "14": {class_type:"CreateVideo", inputs:{images:["12",0], audio:["13",0], fps:24}},
+    "15": {class_type:"SaveVideo", inputs:{video:["14",0], filename_prefix:"video/H3_t2v", format:"auto", codec:"auto"}}
+  };
+}
+
 async function generate(){
   $("errBox").style.display = "none";
-  const wf = buildWorkflow();
   $("genBtn").disabled = true; $("genBtn").textContent = t("submitting");
   try{
+    const wf = buildWorkflow();
+    const mode = $("wfSel").value;
+    if(mode !== "t2v"){
+      const ff = $("ffFile").files[0];
+      if(!ff) throw new Error(t("needFirst"));
+      wf["6"].inputs.first_frame = ["16",0];
+      wf["16"] = {class_type:"LoadImage", inputs:{image: await uploadImg(ff)}};
+      if(mode === "flf2v"){
+        const lf = $("lfFile").files[0];
+        if(!lf) throw new Error(t("needLast"));
+        wf["6"].inputs.last_frame = ["17",0];
+        wf["17"] = {class_type:"LoadImage", inputs:{image: await uploadImg(lf)}};
+      }
+    }
     const r = await fetch(api("/prompt"), {
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({prompt: wf, client_id: clientId})
@@ -955,6 +1000,15 @@ async function delHist(pid){
   if(ent && $("videoBox").innerHTML.includes(ent.url)) $("videoBox").innerHTML = '<div class="placeholder">' + t("deleted") + '</div>';
 }
 
+function updateWfUI(){
+  const m = $("wfSel").value;
+  localStorage.setItem("h3_wf", m);
+  $("imgBox").style.display = m === "t2v" ? "none" : "";
+  $("lfWrap").style.display = m === "flf2v" ? "" : "none";
+}
+$("wfSel").value = localStorage.getItem("h3_wf") || "t2v";
+updateWfUI();
+$("wfSel").addEventListener("change", updateWfUI);
 applyTheme(localStorage.getItem("h3_theme") || "dark");
 $("langSel").addEventListener("change", ()=>{
   LANG = $("langSel").value;

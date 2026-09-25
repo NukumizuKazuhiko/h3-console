@@ -7,7 +7,8 @@
 ## 功能
 
 **视频生成**
-- 直连 ComfyUI API（WebSocket 进度 + 实时预览），分辨率/时长/种子/LoRA 强度可调，内置官方 t2v 工作流
+- 三种工作流可切换：文生视频（t2v）、图生视频（首帧 i2v）、首尾帧（flf2v），均为官方 `MiniMaxH3ImageToVideo` 原生接线，权重与 t2v 通用、实例零额外配置
+- 直连 ComfyUI API（WebSocket 进度 + 实时预览），分辨率/时长/种子/LoRA 强度可调
 - 生成中再次提交自动进入原生 ComfyUI 队列，队列展示进度、支持中断/移除（页面内确认框，兼容 Android WebView）
 - 历史记录持久化（localStorage），刷新自动恢复追踪，结果内嵌播放
 - 删除记录时同步删除云端文件与 ComfyUI 历史索引
