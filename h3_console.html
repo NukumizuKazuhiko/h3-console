@@ -166,6 +166,7 @@ hist-item{display:block}
     <input type="number" id="tdMin" value="60" min="1" style="width:80px" data-i18n-title="minTitle" title="分钟后关机">
     <button class="ghost" onclick="setTimedShutdown()" data-i18n="timed">定时关机</button>
     <button class="ghost" onclick="cancelTimedShutdown()" data-i18n="untimed">取消定时</button>
+    <label class="toggle"><input type="checkbox" id="autoOff"> <span data-i18n="autoOff">完成后关机</span></label>
     <span class="hint" id="pwrHint" style="margin:0"></span>
   </div>
   <div class="hint" id="billLine" style="margin:4px 0 0"></div>
@@ -173,7 +174,7 @@ hist-item{display:block}
     <label data-i18n="apiAddr">ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
   </div>
-  <div class="hint">v1.5</div>
+  <div class="hint">v1.6</div>
 </div>
 
 <div class="panel">
@@ -273,7 +274,7 @@ zh: {
  docTitle:"H3 视频生成控制台", title:"MiniMax H3 视频生成控制台", themeTitle:"切换主题",
  conn:"连接", login:"登录 AutoDL", instance:"实例", pickInst:"— 请先获取列表 —", fetchList:"获取列表",
  unknown:"未知", notConnected:"未连接", vram:"显存", queue:"队列",
- powerOn:"开机", powerOff:"关机", timed:"定时关机", untimed:"取消定时", minTitle:"分钟后关机",
+ powerOn:"开机", powerOff:"关机", timed:"定时关机", untimed:"取消定时", minTitle:"分钟后关机", autoOff:"完成后关机", autoOffDone:"任务全部完成，自动关机…",
  apiAddr:"ComfyUI API 地址",
  loginInApp:"请在手机端 App 内使用登录", logged:"已登录", loginFirst:"请先登录", loginExpired:"登录已过期，请重新登录",
  fetching:"获取中…", noInst:"暂无实例", fetchFail:"获取失败：", noInstSel:"未选择实例",
@@ -313,7 +314,7 @@ en: {
  docTitle:"H3 Video Console", title:"MiniMax H3 Video Console", themeTitle:"Toggle theme",
  conn:"Connection", login:"Login AutoDL", instance:"Instance", pickInst:"— fetch list first —", fetchList:"Fetch list",
  unknown:"Unknown", notConnected:"Not connected", vram:"VRAM", queue:"Queue",
- powerOn:"Power on", powerOff:"Power off", timed:"Timed off", untimed:"Cancel timer", minTitle:"minutes from now",
+ powerOn:"Power on", powerOff:"Power off", timed:"Timed off", untimed:"Cancel timer", minTitle:"minutes from now", autoOff:"Off when done", autoOffDone:"All tasks done, shutting down…",
  apiAddr:"ComfyUI API URL",
  loginInApp:"Please use login inside the mobile App", logged:"Logged in", loginFirst:"Please log in first", loginExpired:"Session expired, please log in again",
  fetching:"Fetching…", noInst:"No instances", fetchFail:"Fetch failed: ", noInstSel:"No instance selected",
@@ -476,6 +477,8 @@ function clearImg(id){
   $(id).value = "";
   imgPicked(id.replace("File",""));
 }
+function saveAutoOff(){ localStorage.setItem("h3_autooff", $("autoOff").checked ? "1" : "0"); }
+$("autoOff").addEventListener("change", saveAutoOff);
 function imgPicked(which){
   const inp = $(which + "File");
   const f = inp.files[0];
@@ -697,6 +700,10 @@ async function powerOff(){
     if(!await uiConfirm(t("confirmShutdown"), true)) return;
   }
   $("pwrHint").textContent = t("shutting");
+  await doPowerOff();
+}
+
+async function doPowerOff(){
   instOn = false;
   try{
     await dlCall("/api/v1/instance/power_off", {instance_uuid: $("dlInst").value});
@@ -962,6 +969,10 @@ function finishRun(url, errMsg, fname, serverElapsed){
     startRun(next.pid);
   }else{
     renderQueue();
+    if($("autoOff").checked){
+      if(instOn){ $("pwrHint").textContent = t("autoOffDone"); doPowerOff(); }
+      $("autoOff").checked = false; saveAutoOff();
+    }
   }
 }
 
@@ -1009,6 +1020,7 @@ async function delHist(pid){
   if(ent && $("videoBox").innerHTML.includes(ent.url)) $("videoBox").innerHTML = '<div class="placeholder">' + t("deleted") + '</div>';
 }
 
+$("autoOff").checked = localStorage.getItem("h3_autooff") === "1";
 applyTheme(localStorage.getItem("h3_theme") || "dark");
 $("langSel").addEventListener("change", ()=>{
   LANG = $("langSel").value;
