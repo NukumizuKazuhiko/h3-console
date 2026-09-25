@@ -132,10 +132,11 @@ html[data-theme="light"] button.ghost:hover{background:rgba(15,168,166,.07)}
 .cost b{color:var(--accent2);font-size:15px}
 .errBox{background:rgba(197,30,42,.12);border:1px solid rgba(197,30,42,.45);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--bone);white-space:pre-wrap;margin-top:10px;display:none}
 .presetBtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.monGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.monItem{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
-.monTop{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--dim)}
-.monTop b{color:var(--text);font-size:14px;font-weight:600}
+.monGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.monItem{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;min-width:0}
+.monTop{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;color:var(--dim)}
+.monTop span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.monTop b{flex:none;color:var(--text);font-size:14px;font-weight:600}
 .monBar{height:6px;border-radius:99px;background:var(--border);margin-top:8px;overflow:hidden}
 .monBar i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--ok));border-radius:99px;transition:width .4s}
 .monSub{font-size:11px;color:var(--dim);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -165,7 +166,6 @@ html[data-theme="light"] .imgBtn:hover{background:rgba(15,168,166,.07)}
 
 @media (max-width:720px){
   body{padding:12px}
-  .monGrid{grid-template-columns:1fr}
   h1{font-size:16px}
   .brandMark{width:32px;height:32px;border-radius:10px;font-size:13px}
   .panel{padding:14px;border-radius:14px}
@@ -279,7 +279,7 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
     <label data-i18n="apiAddr">ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
   </div>
-  <div class="hint">v1.28</div>
+  <div class="hint">v1.29</div>
 </div>
 
 <div class="panel">
@@ -1544,7 +1544,9 @@ function updateMonitor(st, q){
   if(d && $("monGpuName")){
     let name = d.name || "-";
     if(d.vram_total) name += " · " + t("vram") + " " + ((d.vram_total-(d.vram_free||0))/1073741824).toFixed(1) + "/" + (d.vram_total/1073741824).toFixed(1) + " GB";
-    $("monGpuName").textContent = name;
+    const gn = $("monGpuName");
+    gn.textContent = name;
+    gn.title = name;
   }
   const rt = st.system && st.system.ram_total, rf = st.system && st.system.ram_free;
   if(rt && $("monRam")){
