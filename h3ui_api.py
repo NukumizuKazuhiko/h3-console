@@ -16,18 +16,24 @@ def _gpu_util():
         import pynvml
         pynvml.nvmlInit()
         h = pynvml.nvmlDeviceGetHandleByIndex(0)
-        return round(float(pynvml.nvmlDeviceGetUtilizationRates(h).gpu), 1)
+        util = round(float(pynvml.nvmlDeviceGetUtilizationRates(h).gpu), 1)
+        try:
+            temp = round(float(pynvml.nvmlDeviceGetTemperature(h, pynvml.NVML_TEMPERATURE_GPU)), 1)
+        except Exception:
+            temp = None
+        return util, temp
     except Exception:
         pass
     try:
         import subprocess
         out = subprocess.run(
-            ["nvidia-smi", "--query-gpu=utilization.gpu", "--format=csv,noheader,nounits"],
+            ["nvidia-smi", "--query-gpu=utilization.gpu,temperature.gpu", "--format=csv,noheader,nounits"],
             capture_output=True, timeout=3,
         )
-        return float(out.stdout.decode().strip().splitlines()[0])
+        vals = [float(x) for x in out.stdout.decode().strip().splitlines()[0].split(",")]
+        return vals[0], vals[1]
     except Exception:
-        return None
+        return None, None
 
 @PromptServer.instance.routes.get("/h3ui/stats")
 async def h3ui_stats(request):
@@ -41,8 +47,8 @@ async def h3ui_stats(request):
             cpu = round(100.0 * (1.0 - di / dt), 1)
     except Exception:
         pass
-    gpu = await asyncio.get_event_loop().run_in_executor(None, _gpu_util)
-    return web.json_response({"cpu": cpu, "gpu": gpu})
+    gpu, temp = await asyncio.get_event_loop().run_in_executor(None, _gpu_util)
+    return web.json_response({"cpu": cpu, "gpu": gpu, "temp": temp})
 
 @PromptServer.instance.routes.post("/h3ui/delete")
 async def h3ui_delete(request):
