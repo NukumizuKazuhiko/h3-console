@@ -180,6 +180,9 @@ html[data-theme="light"] .imgBtn:hover{background:rgba(15,168,166,.07)}
 .ts-wrapper .ts-control{background:var(--panel2);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:9px 32px 9px 12px;font-size:13px;font-family:inherit;box-shadow:none;min-height:0;line-height:1.6;width:100%;cursor:pointer;transition:border-color .15s,box-shadow .15s}
 .ts-wrapper .ts-control::after{content:"";position:absolute;right:13px;top:50%;width:12px;height:8px;margin-top:-4px;background:var(--selArrow) no-repeat center/12px 8px;pointer-events:none}
 .ts-wrapper.focus .ts-control,.ts-wrapper.dropdown-active .ts-control{border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+.ts-wrapper.single .ts-control{background:var(--panel2);background-image:none;border-color:var(--border);box-shadow:none}
+.ts-wrapper.single .ts-control::after{border:0;content:"";position:absolute;right:13px;top:50%;width:12px;height:8px;margin-top:-4px;background:var(--selArrow) no-repeat center/12px 8px}
+.ts-wrapper.single.dropdown-active .ts-control::after{transform:rotate(180deg)}
 .ts-wrapper.single.input-active .ts-control{background:var(--panel2);cursor:pointer}
 .ts-wrapper .ts-control .item{color:var(--text)}
 .ts-wrapper .ts-control>input{font-size:13px;color:var(--text)}
@@ -251,7 +254,7 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
     <label data-i18n="apiAddr">ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
   </div>
-  <div class="hint">v1.15</div>
+  <div class="hint">v1.16</div>
 </div>
 
 <div class="panel">
@@ -869,6 +872,7 @@ function applyI18n(){
     if(its.control_input) its.control_input.placeholder = t("pickInst");
   }
   $("costLive").innerHTML = fmtElapsed(running ? (Date.now()-startT)/1000 : 0);
+  if(loginHintKey) $("loginHint").textContent = t(loginHintKey);
   renderQueue(); updateDur(); renderBill();
 }
 
@@ -992,13 +996,15 @@ function saveApi(){ localStorage.setItem("h3_api", $("apiBase").value); }
 $("apiBase").addEventListener("change", ()=>{ saveApi(); connect(); });
 
 const DL_API = "https://www.autodl.com";
+let loginHintKey = null;
+function setLoginHint(k){ loginHintKey = k; $("loginHint").textContent = k ? t(k) : ""; }
 function openLogin(){
   if(window.H3App){ H3App.openLogin(); return; }
-  $("loginHint").textContent = t("loginInApp");
+  setLoginHint("loginInApp");
 }
 function applyToken(tk){
   localStorage.setItem("h3_dltoken", tk);
-  $("loginHint").textContent = t("logged");
+  setLoginHint("logged");
   loadInstances();
 }
 $("dlInst").addEventListener("change", ()=>{ localStorage.setItem("h3_inst", $("dlInst").value); updateInstUI(); autoSetApi(); });
@@ -1151,7 +1157,7 @@ async function loadInstances(){
     if(sel.value){ setTimeout(pollInstStatus, 500); autoSetApi(); }
   }catch(e){
     $("pwrHint").textContent = t("fetchFail") + e.message;
-    if(String(e.message).includes("Authorize")) $("loginHint").textContent = t("loginExpired");
+    if(String(e.message).includes("Authorize")) setLoginHint("loginExpired");
     showAdv();
   }
 }
@@ -1639,7 +1645,7 @@ connect();
 pollStatus();
 restoreOnLoad();
 pollInstStatus();
-if(dlReady()){ $("loginHint").textContent = t("logged"); loadInstances(); }
+if(dlReady()){ setLoginHint("logged"); loadInstances(); }
 </script>
 </body>
 </html>
