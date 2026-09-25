@@ -198,6 +198,7 @@ html[data-theme="light"] .imgBtn:hover{background:rgba(15,168,166,.07)}
 .ts-wrapper .ts-control .item{color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ts-wrapper .ts-control>input{font-size:13px;color:var(--text)}
 .ts-wrapper .ts-control>input::placeholder{color:var(--dim);opacity:1}
+.ts-wrapper.single.has-items .ts-control>input{position:absolute;width:1px!important;min-width:0!important;height:1px;opacity:0;pointer-events:none;margin:0!important}
 .ts-dropdown{background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:0 16px 48px rgba(0,0,0,.4);margin-top:6px;padding:6px;z-index:1200;color:var(--text);font-size:13px}
 html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
 .ts-dropdown .option{padding:8px 12px;border-radius:8px;color:var(--text);opacity:1;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -269,7 +270,7 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
     <label data-i18n="apiAddr">ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
   </div>
-  <div class="hint">v1.25</div>
+  <div class="hint">v1.26</div>
 </div>
 
 <div class="panel">
@@ -1647,7 +1648,11 @@ function initTomSelects(){
     const inst = $("dlInst");
     const ph = inst.querySelector('option[value=""]');
     if(ph){ ph.remove(); inst.setAttribute("data-placeholder", t("pickInst")); }
-    new TomSelect("#dlInst", {wrapperClass:"ts-wrapper inst-w", maxOptions:100, placeholder:t("pickInst"), onInitialize:function(){ this.control_input.readOnly = true; }});
+    new TomSelect("#dlInst", {wrapperClass:"ts-wrapper inst-w", maxOptions:100, placeholder:t("pickInst"), onInitialize:function(){
+      this.control_input.readOnly = true;
+      const ci = this.control_input, f = ci.focus.bind(ci);
+      ci.focus = o => f(Object.assign({preventScroll:true}, o));
+    }});
   }catch(e){}
 }
 
