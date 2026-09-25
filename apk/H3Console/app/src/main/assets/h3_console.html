@@ -183,7 +183,7 @@ details.fold summary:hover{color:var(--text)}
     <label data-i18n="apiAddr">ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
   </div>
-  <div class="hint">v1.7</div>
+  <div class="hint">v1.8</div>
 </div>
 
 <div class="panel">
@@ -457,7 +457,8 @@ function restoreOnLoad(){
   for(const it of loadHist()) addHistEntry(it, false);
 }
 
-async function resumeFromQueue(){
+async function resumeFromQueue(tries){
+  if(!dlReady()) return;
   try{
     const q = await (await fetch(nb("/queue"), {cache:"no-store", signal:AbortSignal.timeout(8000)})).json();
     const mine = q.queue_running.concat(q.queue_pending)
@@ -468,7 +469,9 @@ async function resumeFromQueue(){
       taskQueue = mine.slice(1).map(pid=>({pid, label:""}));
       startRun(mine[0], true);
     }
-  }catch(e){}
+  }catch(e){
+    if((tries||0) < 10) setTimeout(()=>resumeFromQueue((tries||0)+1), 5000);
+  }
 }
 
 $("apiBase").value = localStorage.getItem("h3_api") || "";
@@ -606,7 +609,7 @@ async function pollInstStatus(){
         instPrice = (parseFloat(it.payg_price)||0)/1000;
         instBootAt = on ? new Date(it.status_at).getTime() || null : null;
         renderBill();
-        if(on && (lastInstOn === false || (lastInstOn !== null && !$("apiBase").value.trim()))) autoSetApi();
+        if(on && (lastInstOn === false || !$("apiBase").value.trim())) autoSetApi();
         lastInstOn = on;
         $("dotInst").className = "dot " + (on ? "on" : "off");
         $("pwrOnBtn").disabled = on;
@@ -881,6 +884,17 @@ async function powerOnAndWait(){
   $("pwrHint").textContent = t("powering");
   $("genBtn").textContent = t("powering");
   try{ await dlCall("/api/v1/instance/power_on", {instance_uuid: $("dlInst").value}); }catch(e){}
+  for(let i=0;i<24;i++){
+    if($("apiBase").value.trim()) break;
+    try{
+      const d = await dlCall("/api/v1/instance");
+      instListCache = d.list || [];
+    }catch(e){}
+    if(curInst() && curInst().status === "running") await autoSetApi();
+    if($("apiBase").value.trim()) break;
+    await new Promise(r=>setTimeout(r,5000));
+  }
+  if(!$("apiBase").value.trim()) throw new Error(t("noForward"));
   const ok = await waitComfyReady();
   if(!ok) throw new Error(t("noResp"));
   $("pwrHint").textContent = t("ready");
@@ -969,9 +983,9 @@ async function waitForResult(pid, tries, resumed, seq){
       }
     }else if(resumed && tries >= 10){
       const q = await (await fetch(nb("/queue"), {cache:"no-store", signal:AbortSignal.timeout(8000)})).json();
-      if(!q.queue_running.concat(q.queue_pending).some(it=>it[1]===pid)){
-        finishRun(null, t("taskLost")); return;
-      }
+      const entry = q.queue_running.concat(q.queue_pending).find(it=>it[1]===pid);
+      if(!entry){ finishRun(null, t("taskLost")); return; }
+      $("nodeLine").textContent = q.queue_running.some(it=>it[1]===pid) ? t("generating") : t("loadingModel");
       resumeFails = 0;
     }
   }catch(e){
