@@ -80,6 +80,7 @@ button.ghost:hover{border-color:var(--accent)}
 .qDel:hover{color:var(--err)}
 #videoBox{background:#000;border-radius:8px;min-height:200px;display:flex;align-items:center;justify-content:center;overflow:hidden}
 #videoBox video{width:100%;max-height:460px;border-radius:8px}
+#videoBox .placeholder{color:rgba(181,184,187,.65)}
 .placeholder{color:var(--dim);font-size:13px;padding:40px;text-align:center;line-height:1.8}
 .cost{font-size:13px;color:var(--dim)}
 .cost b{color:var(--accent2);font-size:15px}
@@ -146,8 +147,8 @@ hist-item{display:block}
     <button class="ghost" onclick="loadInstances()" data-i18n="fetchList">获取列表</button>
   </div>
   <div class="status" style="margin-top:8px">
-    <span><span class="dot off" id="dotInst"></span><span id="instText">未知</span></span>
-    <span><span class="dot off" id="dotConn"></span><span id="connText">未连接</span></span>
+    <span><span class="dot off" id="dotInst"></span><span id="instText" data-i18n="unknown">未知</span></span>
+    <span><span class="dot off" id="dotConn"></span><span id="connText" data-i18n="notConnected">未连接</span></span>
     <span><span data-i18n="vram">显存</span> <b id="vramText">-</b></span>
     <span><span data-i18n="queue">队列</span> <b id="queueText">-</b></span>
     <span>GPU <b id="gpuText">-</b></span>
@@ -218,7 +219,7 @@ hist-item{display:block}
     <span class="cost" id="costLive"></span>
   </div>
   <div class="progressWrap"><div class="progressBar" id="progBar"></div></div>
-  <div class="nodeLine" id="nodeLine">空闲</div>
+  <div class="nodeLine" id="nodeLine" data-i18n="idle">空闲</div>
   <div id="queueBox"></div>
   <div class="errBox" id="errBox"></div>
 </div>
@@ -232,6 +233,8 @@ hist-item{display:block}
   <div id="histList"></div>
 </div>
 
+<div id="cfmMask"><div id="cfmBox"><p id="cfmMsg"></p><div id="cfmBtns"><button id="cfmCancel" data-i18n="cancel">取消</button><button id="cfmOk" data-i18n="ok">确定</button></div></div></div>
+
 <script>
 const PRESETS = [
 `Realistic live-action cinematic look: a post-rain dusk metropolis, anamorphic lens, shallow depth of field, film grain, city volumetric fog. A lone runner sprints across a rooftop, leaps to the next building, lands and rolls, then keeps running. Camera: high side angle tracking shot, one clean cut on the leap. Audio: wind, rapid footsteps, city ambience, low tense score, an accent hit on the leap. No text, subtitles, logos or watermarks.`,
@@ -242,7 +245,7 @@ const I18N = {
 zh: {
  docTitle:"H3 视频生成控制台", title:"MiniMax H3 视频生成控制台", themeTitle:"切换主题",
  conn:"连接", login:"登录 AutoDL", instance:"实例", pickInst:"— 请先获取列表 —", fetchList:"获取列表",
- unknown:"未知", vram:"显存", queue:"队列",
+ unknown:"未知", notConnected:"未连接", vram:"显存", queue:"队列",
  powerOn:"开机", powerOff:"关机", timed:"定时关机", untimed:"取消定时", minTitle:"分钟后关机",
  apiAddr:"ComfyUI API 地址",
  loginInApp:"请在手机端 App 内使用登录", logged:"已登录", loginFirst:"请先登录", loginExpired:"登录已过期，请重新登录",
@@ -281,7 +284,7 @@ zh: {
 en: {
  docTitle:"H3 Video Console", title:"MiniMax H3 Video Console", themeTitle:"Toggle theme",
  conn:"Connection", login:"Login AutoDL", instance:"Instance", pickInst:"— fetch list first —", fetchList:"Fetch list",
- unknown:"Unknown", vram:"VRAM", queue:"Queue",
+ unknown:"Unknown", notConnected:"Not connected", vram:"VRAM", queue:"Queue",
  powerOn:"Power on", powerOff:"Power off", timed:"Timed off", untimed:"Cancel timer", minTitle:"minutes from now",
  apiAddr:"ComfyUI API URL",
  loginInApp:"Please use login inside the mobile App", logged:"Logged in", loginFirst:"Please log in first", loginExpired:"Session expired, please log in again",
@@ -965,6 +968,5 @@ restoreOnLoad();
 pollInstStatus();
 if(dlReady()){ $("loginHint").textContent = t("logged"); loadInstances(); }
 </script>
-<div id="cfmMask"><div id="cfmBox"><p id="cfmMsg"></p><div id="cfmBtns"><button id="cfmCancel" data-i18n="cancel">取消</button><button id="cfmOk" data-i18n="ok">确定</button></div></div></div>
 </body>
 </html>
