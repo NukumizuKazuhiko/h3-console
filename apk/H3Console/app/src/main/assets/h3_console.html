@@ -101,6 +101,12 @@ hist-item{display:block}
 .imgBtn:hover{border-color:var(--accent);color:var(--text)}
 .imgName{flex:1;font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .imgClear{display:none}
+details.fold{margin-top:10px;font-size:12px;color:var(--dim)}
+details.fold summary{cursor:pointer;user-select:none;color:var(--dim);font-size:12px;list-style:none}
+details.fold summary::-webkit-details-marker{display:none}
+details.fold summary::before{content:"▸";display:inline-block;margin-right:6px;transition:transform .15s}
+details.fold[open] summary::before{transform:rotate(90deg)}
+details.fold summary:hover{color:var(--text)}
 
 @media (max-width:720px){
   body{padding:12px}
@@ -160,21 +166,24 @@ hist-item{display:block}
     <span><span data-i18n="queue">队列</span> <b id="queueText">-</b></span>
     <span>GPU <b id="gpuText">-</b></span>
   </div>
-  <div class="inline" style="margin-top:8px;flex-wrap:wrap">
-    <button class="ghost" id="pwrOnBtn" onclick="powerOn()" data-i18n="powerOn">开机</button>
-    <button class="ghost" id="pwrOffBtn" onclick="powerOff()" data-i18n="powerOff">关机</button>
-    <input type="number" id="tdMin" value="60" min="1" style="width:80px" data-i18n-title="minTitle" title="分钟后关机">
-    <button class="ghost" onclick="setTimedShutdown()" data-i18n="timed">定时关机</button>
-    <button class="ghost" onclick="cancelTimedShutdown()" data-i18n="untimed">取消定时</button>
-    <label class="toggle"><input type="checkbox" id="autoOff"> <span data-i18n="autoOff">完成后关机</span></label>
-    <span class="hint" id="pwrHint" style="margin:0"></span>
-  </div>
+  <details class="fold">
+    <summary data-i18n="pwrCtl">电源控制</summary>
+    <div class="inline" style="margin-top:8px;flex-wrap:wrap">
+      <button class="ghost" id="pwrOnBtn" onclick="powerOn()" data-i18n="powerOn">开机</button>
+      <button class="ghost" id="pwrOffBtn" onclick="powerOff()" data-i18n="powerOff">关机</button>
+      <input type="number" id="tdMin" value="60" min="1" style="width:80px" data-i18n-title="minTitle" title="分钟后关机">
+      <button class="ghost" onclick="setTimedShutdown()" data-i18n="timed">定时关机</button>
+      <button class="ghost" onclick="cancelTimedShutdown()" data-i18n="untimed">取消定时</button>
+      <label class="toggle"><input type="checkbox" id="autoOff"> <span data-i18n="autoOff">完成后关机</span></label>
+      <span class="hint" id="pwrHint" style="margin:0"></span>
+    </div>
+  </details>
   <div class="hint" id="billLine" style="margin:4px 0 0"></div>
   <div id="advBox" style="display:none">
     <label data-i18n="apiAddr">ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
   </div>
-  <div class="hint">v1.6</div>
+  <div class="hint">v1.7</div>
 </div>
 
 <div class="panel">
@@ -281,6 +290,7 @@ zh: {
  powerOn:"开机", powerOff:"关机", timed:"定时关机", untimed:"取消定时", minTitle:"分钟后关机", autoOff:"完成后关机", autoOffDone:"任务全部完成，自动关机…",
  apiAddr:"ComfyUI API 地址",
  loginInApp:"请在手机端 App 内使用登录", logged:"已登录", loginFirst:"请先登录", loginExpired:"登录已过期，请重新登录",
+ pwrCtl:"电源控制",
  fetching:"获取中…", noInst:"暂无实例", fetchFail:"获取失败：", noInstSel:"未选择实例",
  queryFail:"查询失败：", instOff:"实例未开机",
  st:{running:"运行中", shutdown:"已关机", powering_on:"开机中", creating:"创建中", no_charge:"已关机"},
@@ -321,6 +331,7 @@ en: {
  powerOn:"Power on", powerOff:"Power off", timed:"Timed off", untimed:"Cancel timer", minTitle:"minutes from now", autoOff:"Off when done", autoOffDone:"All tasks done, shutting down…",
  apiAddr:"ComfyUI API URL",
  loginInApp:"Please use login inside the mobile App", logged:"Logged in", loginFirst:"Please log in first", loginExpired:"Session expired, please log in again",
+ pwrCtl:"Power controls",
  fetching:"Fetching…", noInst:"No instances", fetchFail:"Fetch failed: ", noInstSel:"No instance selected",
  queryFail:"Query failed: ", instOff:"Instance is off",
  st:{running:"Running", shutdown:"Off", powering_on:"Booting", creating:"Creating", no_charge:"Off"},
@@ -853,10 +864,34 @@ function buildWorkflow(){
   };
 }
 
+async function waitComfyReady(){
+  for(let i=0;i<60;i++){
+    try{
+      const r = await fetch(nb("/system_stats"), {cache:"no-store", signal:AbortSignal.timeout(5000)});
+      if(r.ok) return true;
+    }catch(e){}
+    await new Promise(r=>setTimeout(r,5000));
+  }
+  return false;
+}
+
+async function powerOnAndWait(){
+  if(!dlReady()) throw new Error(t("loginFirst"));
+  if(!$("dlInst").value) throw new Error(t("pickFirst"));
+  $("pwrHint").textContent = t("powering");
+  $("genBtn").textContent = t("powering");
+  try{ await dlCall("/api/v1/instance/power_on", {instance_uuid: $("dlInst").value}); }catch(e){}
+  const ok = await waitComfyReady();
+  if(!ok) throw new Error(t("noResp"));
+  $("pwrHint").textContent = t("ready");
+  connect();
+}
+
 async function generate(){
   $("errBox").style.display = "none";
   $("genBtn").disabled = true; $("genBtn").textContent = t("submitting");
   try{
+    if(!comfyOnline) await powerOnAndWait();
     const wf = buildWorkflow();
     const ff = $("ffFile").files[0], lf = $("lfFile").files[0];
     if(ff){ wf["6"].inputs.first_frame = ["16",0]; wf["16"] = {class_type:"LoadImage", inputs:{image: await uploadImg(ff)}}; }
