@@ -41,7 +41,9 @@ body{
   font-family:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"PingFang SC","HarmonyOS Sans SC","MiSans","Microsoft YaHei",sans-serif;
   font-size:14px;line-height:1.6;
   padding:28px;max-width:1100px;margin:0 auto;
+  user-select:none;-webkit-user-select:none;
 }
+textarea,input,[contenteditable]{user-select:text;-webkit-user-select:text}
 /* 环境光晕（色卡：电光青 + 深靛蓝低透明度） */
 body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:
   radial-gradient(640px 420px at 12% -6%, var(--glow), transparent 62%),
@@ -270,7 +272,7 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
     <label data-i18n="apiAddr">ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
   </div>
-  <div class="hint">v1.26</div>
+  <div class="hint">v1.27</div>
 </div>
 
 <div class="panel">
