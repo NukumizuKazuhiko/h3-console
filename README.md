@@ -7,8 +7,8 @@
 ## 功能
 
 **界面**
-- 底部导航双页签：**创作**（连接/创作/生成/性能监测/结果）与**设置**
-- 设置页：AutoDL 登录、语言（中文/English）、主题（暗/亮）、GitHub 仓库、爱发电赞助
+- 底部导航三页签：**创作**（创作/生成/性能监测/结果）、**实例**（连接/电源/实例管理）与**设置**
+- 设置页：AutoDL 登录（含用户名 / 余额 / 代金券展示、充值跳转、退出登录）、语言（中文/English）、主题（暗/亮）、GitHub 仓库、爱发电赞助
 - 外链打开策略：原生 App（App Links / Deep Links）→ Chrome Custom Tabs → 系统浏览器，逐级回退
 - 单文件 HTML，零 CDN（Tom Select / Alpine.js 内联），双主题全套色卡变量
 
@@ -25,7 +25,8 @@
 - 端点缺失时相关卡片显示 `--`，不影响其余数据
 
 **实例管理（AutoDL 标准区）**
-- App 内登录 AutoDL 获取 token，自动列出实例并轮询状态
+- App 内登录 AutoDL 获取 token，自动列出实例并轮询状态；登录后展示用户名与余额
+- **App 内直接租用新实例**（实例页「租用」按钮）：选地区 → GPU 型号（显示空闲 x/y）→ 机器（当前有空闲的具体宿主机，按价排序）→ 镜像（基础 PyTorch 系或 ComfyUI 社区镜像，锁定 v18）→ GPU 数量，确认后 `order/instance/create/payg` 按量直连下单（创建前自动校验机器在线与库存）。选社区镜像创建即带 ComfyUI，H3 环境仍需按下方「实例侧配置」部署
 - 开机 / 关机 / 定时关机；「完成后关机」可在队列结束后自动下载视频再关机（一次性生效）
 - 选中实例后自动从 `service_6006_domain` 提取 ComfyUI 转发地址并连接；实例开机后自动获取，无需手动刷新
 - 本地计费：按实例列表返回的 `payg_price` 与 `status_at` 实时折算本次开机费用
@@ -72,6 +73,7 @@ boot/autodl_boot.sh    开机自启钩子（追加到 /etc/autodl.sh，开机自
 apk/H3Console/         Android WebView 壳工程（原生桥接：登录、文件选择、下载、外链）
 autodl_ssh.py          SSH 辅助脚本（凭据走 .env，不入库）
 docs/CHANGELOG.md      版本变更记录
+docs/ARCHITECTURE.md   项目结构与功能文档
 ```
 
 ## SSH 工具配置（可选）
