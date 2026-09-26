@@ -513,7 +513,6 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
   <div class="inline" style="margin-top:8px;flex-wrap:wrap">
     <button class="ghost" onclick="openRent()" data-i18n="rentBtn">租用</button>
     <button class="ghost" onclick="loadInstances()" data-i18n="fetchList">获取列表</button>
-    <button class="ghost" id="dbgCfgBtn" onclick="dbgDeploy()" style="display:none" data-i18n="dbgDeploy">一键配置</button>
   </div>
   <div class="status" id="statusBox" style="margin-top:8px">
     <span><span class="dot off" id="dotInst"></span><span id="instText" data-i18n="unknown">未知</span></span>
@@ -599,7 +598,7 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
       <button class="ghost" onclick="dbgSplash()" data-i18n="dbgSplash">打开开屏页</button>
     </div>
   </div>
-  <div class="hint">v1.98</div>
+  <div class="hint">v1.99</div>
 </div>
 </div>
 </div>
@@ -1116,7 +1115,7 @@ zh: {
  loginInApp:"请在手机端 App 内使用登录", logged:"已登录", loginFirst:"请先登录", loginExpired:"登录已过期，请重新登录",
  splashTagline:"登录 AutoDL 账号后开始使用",
  modeLabel:"使用模式", modeChange:"重新选择", modeTitle:"选择使用模式", modeSub:"按使用经验调整界面引导，可随时在设置中更改", modeNewbie:"新手", modeNewbieDesc:"初次使用 AutoDL，需要更多引导", modeExpert:"老手", modeExpertDesc:"熟练使用 ComfyUI / AutoDL，直接上手", newbieTip:"新手提示：租用实例 → 开机 → 选择实例 → 创作页生成 → 完成后定时关机省成本",
- nbTitle:"租用新机器", nbSub:"只需选择显卡型号，地区按空闲数量自动匹配，镜像自动使用 ComfyUI v18；创建后自动开机并通过 SSH 部署组件", nbGpuLabel:"GPU 型号", nbRegionLabel:"地区（自动匹配）", nbImage:"镜像：ComfyUI v18 社区镜像（自动选择）", nbLoading:"正在查询各地区空闲显卡…", nbRegionAuto:"{name} · 空闲 {idle} 张 · ¥{p}/时", nbIdleSum:"（空闲 {idle} 张）", nbPriceFrom:" · ¥{p}/时起", nbSkip:"稍后再说", nbOffline:"所选机器当前不可下单，请重试", nbRetry:"请重试或稍后再试", nbDeployStart:"正在等待新实例进入列表…", nbDeployPowerOn:"实例创建成功，正在开机…", nbDeployWaitRun:"开机中，等待实例就绪（约 1–2 分钟）…", nbDeploySsh:"正在通过 SSH 部署实例侧组件（监测/删除端点 + 启动脚本 + 开机自启 + 模型下载脚本）…", nbDeployNoCard:"组件部署完成，正在关机并无卡模式开机（¥0.10/时）下载模型…", nbDeployDlStart:"无卡模式已就绪，后台启动模型下载（魔搭源，约 41 GB，可续传）…", nbDeployDlWait:"模型下载中（{size}/约41G，{pct}%，已用时 {min} 分钟）…", nbDeployDlOk:"模型下载完成，正在关机并恢复正常（有卡）开机…", nbDeployDlFail:"模型下载失败：", nbDeploySkip:"实例侧组件已在位，跳过下发", nbDeployNoCardSkip:"实例已处于无卡模式，直接续传下载", nbResume:"检测到上次部署进度，自动续跑", nbAllReady:"组件与模型均已在位，直接验证端点", nbDeployVerify:"已开机，等待 ComfyUI 启动并验证 /h3ui/stats 端点…", nbDeployOk:"实例环境就绪：模型已下载，性能监测与云端删除端点已启用", nbDeployFail:"自动部署中断：", nbDeployManual:"（可在实例 SSH 终端按 README 手动执行部署命令）", nbSshNoInfo:"未获取到实例 SSH 信息，已跳过自动部署", nbCfgBadge:"自动配置中…", dbgNewbie:"模拟新手", dbgClear:"清除数据", dbgSplash:"打开开屏页", dbgDeploy:"一键配置",
+ nbTitle:"租用新机器", nbSub:"只需选择显卡型号，地区按空闲数量自动匹配，镜像自动使用 ComfyUI v18；创建后自动开机并通过 SSH 部署组件", nbGpuLabel:"GPU 型号", nbRegionLabel:"地区（自动匹配）", nbImage:"镜像：ComfyUI v18 社区镜像（自动选择）", nbLoading:"正在查询各地区空闲显卡…", nbRegionAuto:"{name} · 空闲 {idle} 张 · ¥{p}/时", nbIdleSum:"（空闲 {idle} 张）", nbPriceFrom:" · ¥{p}/时起", nbSkip:"稍后再说", nbOffline:"所选机器当前不可下单，请重试", nbRetry:"请重试或稍后再试", nbDeployStart:"正在等待新实例进入列表…", nbDeployPowerOn:"实例创建成功，正在开机…", nbDeployWaitRun:"开机中，等待实例就绪（约 1–2 分钟）…", nbDeploySsh:"正在通过 SSH 部署实例侧组件（监测/删除端点 + 启动脚本 + 开机自启 + 模型下载脚本）…", nbDeployNoCard:"组件部署完成，正在关机并无卡模式开机（¥0.10/时）下载模型…", nbDeployDlStart:"无卡模式已就绪，后台启动模型下载（魔搭源，约 41 GB，可续传）…", nbDeployDlWait:"模型下载中（{size}/约41G，{pct}%，已用时 {min} 分钟）…", nbDeployDlOk:"模型下载完成，正在关机并恢复正常（有卡）开机…", nbDeployDlFail:"模型下载失败：", nbDeploySkip:"实例侧组件已在位，跳过下发", nbDeployDetect:"正在检测实例侧配置状态…", nbDeployNoCardSkip:"实例已处于无卡模式，直接续传下载", nbResume:"检测到上次部署进度，自动续跑", nbAllReady:"组件与模型均已在位，无需配置", nbDeployVerify:"已开机，等待 ComfyUI 启动并验证 /h3ui/stats 端点…", nbDeployOk:"实例环境就绪：模型已下载，性能监测与云端删除端点已启用", nbDeployFail:"自动部署中断：", nbDeployManual:"（可在实例 SSH 终端按 README 手动执行部署命令）", nbSshNoInfo:"未获取到实例 SSH 信息，已跳过自动部署", nbCfgBadge:"自动配置中…", dbgNewbie:"模拟新手", dbgClear:"清除数据", dbgSplash:"打开开屏页", dbgDeploy:"一键配置",
  pwrCtl:"电源控制",
  fetching:"获取中…", noInst:"暂无实例", fetchFail:"获取失败：", noInstSel:"未选择实例",
  queryFail:"查询失败：", instOff:"实例未开机",
@@ -1181,7 +1180,7 @@ en: {
  loginInApp:"Please use login inside the mobile App", logged:"Logged in", loginFirst:"Please log in first", loginExpired:"Session expired, please log in again",
  splashTagline:"Sign in to your AutoDL account to start",
  modeLabel:"Usage mode", modeChange:"Change", modeTitle:"Choose usage mode", modeSub:"Adjusts guidance by experience; change anytime in Settings", modeNewbie:"Beginner", modeNewbieDesc:"First time with AutoDL — extra guidance", modeExpert:"Expert", modeExpertDesc:"Comfortable with ComfyUI / AutoDL — jump right in", newbieTip:"Tip: rent instance → power on → pick instance → generate on Create page → schedule shutdown to save cost",
- nbTitle:"Rent a new machine", nbSub:"Just pick a GPU type — region is matched automatically by idle count, image is set to ComfyUI v18; after ordering it powers on and deploys the components via SSH", nbGpuLabel:"GPU type", nbRegionLabel:"Region (auto-matched)", nbImage:"Image: ComfyUI v18 community image (auto-selected)", nbLoading:"Checking idle GPUs across regions…", nbRegionAuto:"{name} · {idle} idle · ¥{p}/h", nbIdleSum:" ({idle} idle)", nbPriceFrom:" · from ¥{p}/h", nbSkip:"Later", nbOffline:"The selected machine cannot take orders right now — please retry", nbRetry:"please retry or try again later", nbDeployStart:"Waiting for the new instance to appear…", nbDeployPowerOn:"Instance created — powering on…", nbDeployWaitRun:"Booting, waiting for the instance to be ready (~1–2 min)…", nbDeploySsh:"Deploying instance-side components via SSH (stats/delete endpoints + start script + boot hook + model download script)…", nbDeployNoCard:"Deployed — powering off and rebooting in no-GPU mode (¥0.10/h) for model download…", nbDeployDlStart:"No-GPU mode ready — starting model download in background (ModelScope, ~41 GB, resumable)…", nbDeployDlWait:"Downloading models ({size} of ~41G, {pct}%, {min} min elapsed)…", nbDeployDlOk:"Models downloaded — powering off and rebooting with GPU…", nbDeployDlFail:"Model download failed: ", nbDeploySkip:"Components already present — skipping upload", nbDeployNoCardSkip:"Already in no-GPU mode — resuming download directly", nbResume:"Previous deploy progress detected — resuming", nbAllReady:"Components & models present — verifying endpoint directly", nbDeployVerify:"Booted — waiting for ComfyUI and verifying /h3ui/stats…", nbDeployOk:"Instance environment ready: models downloaded, monitoring & delete endpoints enabled", nbDeployFail:"Auto-deploy interrupted: ", nbDeployManual:" (you can run the deploy commands manually in the instance SSH terminal per README)", nbSshNoInfo:"No SSH info found — auto-deploy skipped", nbCfgBadge:"Auto-configuring…", dbgNewbie:"Simulate newbie", dbgClear:"Clear data", dbgSplash:"Open splash", dbgDeploy:"One-click deploy",
+ nbTitle:"Rent a new machine", nbSub:"Just pick a GPU type — region is matched automatically by idle count, image is set to ComfyUI v18; after ordering it powers on and deploys the components via SSH", nbGpuLabel:"GPU type", nbRegionLabel:"Region (auto-matched)", nbImage:"Image: ComfyUI v18 community image (auto-selected)", nbLoading:"Checking idle GPUs across regions…", nbRegionAuto:"{name} · {idle} idle · ¥{p}/h", nbIdleSum:" ({idle} idle)", nbPriceFrom:" · from ¥{p}/h", nbSkip:"Later", nbOffline:"The selected machine cannot take orders right now — please retry", nbRetry:"please retry or try again later", nbDeployStart:"Waiting for the new instance to appear…", nbDeployPowerOn:"Instance created — powering on…", nbDeployWaitRun:"Booting, waiting for the instance to be ready (~1–2 min)…", nbDeploySsh:"Deploying instance-side components via SSH (stats/delete endpoints + start script + boot hook + model download script)…", nbDeployNoCard:"Deployed — powering off and rebooting in no-GPU mode (¥0.10/h) for model download…", nbDeployDlStart:"No-GPU mode ready — starting model download in background (ModelScope, ~41 GB, resumable)…", nbDeployDlWait:"Downloading models ({size} of ~41G, {pct}%, {min} min elapsed)…", nbDeployDlOk:"Models downloaded — powering off and rebooting with GPU…", nbDeployDlFail:"Model download failed: ", nbDeploySkip:"Components already present — skipping upload", nbDeployDetect:"Checking instance deploy state…", nbDeployNoCardSkip:"Already in no-GPU mode — resuming download directly", nbResume:"Previous deploy progress detected — resuming", nbAllReady:"Components & models present — nothing to do", nbDeployVerify:"Booted — waiting for ComfyUI and verifying /h3ui/stats…", nbDeployOk:"Instance environment ready: models downloaded, monitoring & delete endpoints enabled", nbDeployFail:"Auto-deploy interrupted: ", nbDeployManual:" (you can run the deploy commands manually in the instance SSH terminal per README)", nbSshNoInfo:"No SSH info found — auto-deploy skipped", nbCfgBadge:"Auto-configuring…", dbgNewbie:"Simulate newbie", dbgClear:"Clear data", dbgSplash:"Open splash", dbgDeploy:"One-click deploy",
  pwrCtl:"Power controls",
  fetching:"Fetching…", noInst:"No instances", fetchFail:"Fetch failed: ", noInstSel:"No instance selected",
  queryFail:"Query failed: ", instOff:"Instance is off",
@@ -2329,6 +2328,70 @@ function nbCkptClear(){ try{ localStorage.removeItem("h3_deploy_ckpt"); }catch(e
 function nbHint(msg){ $("pwrHint").textContent = (nbStepCur > 0 ? "[" + nbStepCur + "/" + NB_STEPS + "] " : "") + msg; }
 function nbSizeGB(s){ const m = String(s || "").match(/^([0-9.]+)([GM])$/); return m ? parseFloat(m[1]) * (m[2] === "G" ? 1 : 1/1024) : 0; }
 
+// ---- 断点续跑辅助（v1.99）：SSH 状态探测 / SSH 就绪 / 开关机幂等等待 ----
+async function nbProbe(si){
+  const DL_LOG = "/root/autodl-tmp/h3_models_download.log";
+  const det = await sshExec(si.host, si.port, si.pass,
+    "echo C1:$(test -f /root/autodl-tmp/ComfyUI/custom_nodes/h3ui_api.py && echo 1 || echo 0);" +
+    "echo C2:$(test -f /root/autodl-tmp/ComfyUI/start_h3.sh && echo 1 || echo 0);" +
+    "echo C3:$(grep -q 'H3 Console' /etc/autodl.sh 2>/dev/null && echo 1 || echo 0);" +
+    "echo C4:$(test -f /root/autodl-tmp/h3_models_download.sh && echo 1 || echo 0);" +
+    "echo DD:$(grep -c 'done rc=0 miss=0' " + DL_LOG + " 2>/dev/null || echo 0);" +
+    "echo DR:$(pgrep -fc 'h3_models_downloa[d]' 2>/dev/null || echo 0);" +
+    "echo DS:$(du -sh /root/autodl-tmp/ComfyUI/models 2>/dev/null | cut -f1);" +
+    "echo AO:$(curl -sf -m 5 http://127.0.0.1:6006/h3ui/stats >/dev/null 2>&1 && echo 1 || echo 0)", 30);
+  const gv = k => { const m = String(det.out || "").match(new RegExp(k + ":(\\d+)")); return m ? parseInt(m[1]) : 0; };
+  return {
+    compOk: !!(gv("C1") && gv("C2") && gv("C3") && gv("C4")),
+    dlDone: gv("DD") > 0, dlRun: gv("DR") > 0, apiOk: gv("AO") > 0,
+    sz: (String(det.out || "").match(/DS:(\S+)/) || [])[1] || "0"
+  };
+}
+async function nbEnsureSsh(inst, refresh){
+  let si = null;
+  for(let i = 0; i < 15 && !si; i++){
+    si = nbSshInfo(inst.uuid);
+    if(si) break;
+    await nbWait(4000);
+    try{ const d = await dlCall("/api/v1/instance"); refresh(d); }catch(e){}
+  }
+  if(!si) return null;
+  for(let i = 0; i < 12; i++){
+    const r = await sshExec(si.host, si.port, si.pass, "echo ok", 30);
+    if(r.code === 0 && r.out.indexOf("ok") >= 0) return si;
+    await nbWait(4000);
+  }
+  return null;
+}
+async function nbPowerOffWait(uuid){
+  const cur = instListCache.find(x => x.uuid === uuid);
+  if(cur && cur.status !== "running" && cur.status !== "starting") return true; // 已关机
+  try{ await dlCall("/api/v1/instance/power_off", {instance_uuid: uuid}); }catch(e){}
+  for(let i = 0; i < 40; i++){
+    await nbWait(4000);
+    try{
+      const d = await dlCall("/api/v1/instance");
+      instListCache = d.list || []; renderInstOptions(); renderInstCards();
+      const c = instListCache.find(x => x.uuid === uuid);
+      if(c && (c.status === "shutdown" || c.status === "no_charge")) return true;
+    }catch(e){}
+  }
+  return false;
+}
+async function nbPowerOnWait(uuid, nonGpu){
+  try{ await dlCall("/api/v1/instance/power_on", nonGpu ? {instance_uuid: uuid, payload: "non_gpu"} : {instance_uuid: uuid}); }catch(e){}
+  for(let i = 0; i < 60; i++){
+    await nbWait(4000);
+    try{
+      const d = await dlCall("/api/v1/instance");
+      instListCache = d.list || []; renderInstOptions(); renderInstCards();
+      const c = instListCache.find(x => x.uuid === uuid);
+      if(c && c.status === "running") return true;
+    }catch(e){}
+  }
+  return false;
+}
+
 async function nbDeployRun(uuid){
   const hint = nbHint;
   const refresh = d => { instListCache = d.list || []; renderInstOptions(); renderInstCards(); };
@@ -2336,15 +2399,12 @@ async function nbDeployRun(uuid){
   nbStepSet(1);
   try{
     hint(t("nbDeployStart"));
-    // 1) 等新实例进入列表并选中（下单接口若返回 uuid 则精确匹配，否则取列表第一个）
-    let inst = null;
-    for(let i = 0; i < 15 && !inst; i++){
+    // 1) 定位实例：uuid 精确匹配（每卡一键配置 / 新实例下单均适用）；缓存已有则立即命中
+    let inst = uuid ? (instListCache.find(x => x.uuid === uuid) || null) : (instListCache[0] || null);
+    for(let i = 0; !inst && i < 15; i++){
       await nbWait(4000);
-      try{
-        const d = await dlCall("/api/v1/instance");
-        refresh(d);
-        inst = (uuid && instListCache.find(x => x.uuid === uuid)) || instListCache[0] || null;
-      }catch(e){}
+      try{ const d = await dlCall("/api/v1/instance"); refresh(d); }catch(e){}
+      inst = uuid ? (instListCache.find(x => x.uuid === uuid) || null) : (instListCache[0] || null);
     }
     if(!inst){ hint(t("nbDeployFail") + t("nbDeployManual")); return; }
     setSelectValue($("dlInst"), inst.uuid);
@@ -2353,70 +2413,46 @@ async function nbDeployRun(uuid){
     nbStepUuid = inst.uuid;
     nbStepSet(2);
     renderInstCards();
-    // 2) 开机并等 running（最长 ~4 分钟）；已在运行则跳过
-    if(inst.status !== "running"){
-      hint(t("nbDeployPowerOn"));
-      try{ await dlCall("/api/v1/instance/power_on", {instance_uuid: inst.uuid}); }catch(e){}
+    // 2) 电源状态分支（一键配置语义）：
+    //    有卡运行 → 先探测：已配置完毕则不管；未完成 → 关机 → 无卡开机
+    //    无卡运行 → 保持现状直接续跑；关机/其他 → 自动无卡开机
+    let st = null, si = null;
+    let cur = instListCache.find(x => x.uuid === inst.uuid) || inst;
+    if(cur.status === "running" && cur.start_mode !== "non_gpu"){
+      hint(t("nbDeployDetect"));
+      si = await nbEnsureSsh(inst, refresh);
+      if(!si){ hint(t("nbDeployFail") + "ssh " + t("nbDeployManual")); return; }
+      st = await nbProbe(si);
+      if(st.compOk && st.dlDone){
+        hint(t("nbAllReady"));           // 已配置完毕：不管
+        showToast(t("nbDeployOk"));
+        nbCkptClear();
+        return;
+      }
+      hint(t("nbDeployNoCard"));         // 未完成：关机后无卡开机配置
+      if(!(await nbPowerOffWait(inst.uuid))){ hint(t("nbDeployFail") + t("nbDeployManual")); return; }
+      await nbPowerOnWait(inst.uuid, true);
+    }else if(cur.status === "running" && cur.start_mode === "non_gpu"){
+      hint(t("nbDeployNoCardSkip"));
+    }else{
+      hint(t("nbDeployNoCard"));
+      await nbPowerOnWait(inst.uuid, true);
     }
-    hint(t("nbDeployWaitRun"));
-    let on = false;
-    for(let i = 0; i < 60; i++){
-      await nbWait(4000);
-      try{
-        const d = await dlCall("/api/v1/instance");
-        refresh(d);
-        inst = instListCache.find(x => x.uuid === inst.uuid) || inst;
-        if(inst && inst.status === "running"){ on = true; break; }
-      }catch(e){}
-    }
-    if(!on){ hint(t("nbDeployFail") + t("nbDeployManual")); return; }
     // 3) 等 SSH 可达（实例列表此时应带 ssh_command / root_password）
     nbStepSet(3);
-    let si = null;
-    for(let i = 0; i < 15 && !si; i++){
-      si = nbSshInfo(inst.uuid);
-      if(si) break;
-      await nbWait(4000);
-      try{ const d = await dlCall("/api/v1/instance"); refresh(d); inst = instListCache.find(x => x.uuid === inst.uuid) || inst; }catch(e){}
-    }
-    if(!si){ showToast(t("nbSshNoInfo")); return; }
-    let sshOk = false;
-    for(let i = 0; i < 12 && !sshOk; i++){
-      const r = await sshExec(si.host, si.port, si.pass, "echo ok", 30);
-      if(r.code === 0 && r.out.indexOf("ok") >= 0) sshOk = true;
-      else await nbWait(4000);
-    }
-    if(!sshOk){ hint(t("nbDeployFail") + "ssh " + t("nbDeployManual")); return; }
-    // 3.5) 断点检测：探测实例侧组件 / 下载进程 / 下载结果 / API 端点，决定从哪一步续跑
-    const DL_LOG = "/root/autodl-tmp/h3_models_download.log";
-    const det = await sshExec(si.host, si.port, si.pass,
-      "echo C1:$(test -f /root/autodl-tmp/ComfyUI/custom_nodes/h3ui_api.py && echo 1 || echo 0);" +
-      "echo C2:$(test -f /root/autodl-tmp/ComfyUI/start_h3.sh && echo 1 || echo 0);" +
-      "echo C3:$(grep -q 'H3 Console' /etc/autodl.sh 2>/dev/null && echo 1 || echo 0);" +
-      "echo C4:$(test -f /root/autodl-tmp/h3_models_download.sh && echo 1 || echo 0);" +
-      "echo DD:$(grep -c 'done rc=0 miss=0' " + DL_LOG + " 2>/dev/null || echo 0);" +
-      "echo DR:$(pgrep -fc 'h3_models_downloa[d]' 2>/dev/null || echo 0);" +
-      "echo DS:$(du -sh /root/autodl-tmp/ComfyUI/models 2>/dev/null | cut -f1);" +
-      "echo AO:$(curl -sf -m 5 http://127.0.0.1:6006/h3ui/stats >/dev/null 2>&1 && echo 1 || echo 0)", 30);
-    const gv = k => { const m = String(det.out || "").match(new RegExp(k + ":(\\d+)")); return m ? parseInt(m[1]) : 0; };
-    const compOk = gv("C1") && gv("C2") && gv("C3") && gv("C4");
-    const dlDone = gv("DD") > 0, dlRun = gv("DR") > 0, apiOk = gv("AO") > 0;
-    const dlSz0 = (String(det.out || "").match(/DS:(\S+)/) || [])[1] || "0";
+    if(!si) si = await nbEnsureSsh(inst, refresh);
+    if(!si){ hint(t("nbDeployFail") + "ssh " + t("nbDeployManual")); return; }
+    // 4) 断点检测（组件 / 下载进程 / 下载结果 / API 端点），决定从哪一步续跑
+    nbStepSet(4);
+    hint(t("nbDeployDetect"));
+    if(!st) st = await nbProbe(si);
     const prevCkpt = nbCkptLoad(inst.uuid);
-    if((prevCkpt && prevCkpt.step > 1) || compOk || dlDone || dlRun || apiOk) showToast(t("nbResume"));
-    // 快路径：端点可用 + 模型齐 + 有卡运行中 → 直达验证
-    if(apiOk && dlDone && inst.start_mode !== "non_gpu"){
-      nbStepSet(8);
-      hint(t("nbAllReady"));
-      nbCkptClear();
-      showToast(t("nbDeployOk"));
-      return;
-    }
-    // 4) 部署四连（GitHub 不通先走学术加速）：API 端点 / 启动脚本 / 开机自启 / 模型下载脚本
-    if(compOk){
+    if((prevCkpt && prevCkpt.step > 1) || st.compOk || st.dlDone || st.dlRun || st.apiOk) showToast(t("nbResume"));
+    // 5) 部署四连（GitHub 不通先走学术加速）：API 端点 / 启动脚本 / 开机自启 / 模型下载脚本
+    if(st.compOk){
       hint(t("nbDeploySkip"));
     }else{
-      nbStepSet(4);
+      nbStepSet(5);
       const pre = "source /etc/network_turbo >/dev/null 2>&1; ";
       const steps = [
         [pre + "mkdir -p /root/autodl-tmp/ComfyUI/custom_nodes && curl -fsSL -m 60 " + NB_RAW + "/h3ui_api.py -o /root/autodl-tmp/ComfyUI/custom_nodes/h3ui_api.py && echo DEPLOY_OK1", "DEPLOY_OK1"],
@@ -2433,47 +2469,13 @@ async function nbDeployRun(uuid){
         }
       }
     }
-    // 5) 关机 → 无卡模式开机（¥0.10/时）：模型下载不需要 GPU；已在无卡模式运行则跳过开关机
-    let cur = instListCache.find(x => x.uuid === inst.uuid) || inst;
-    let off = false;
-    if(dlDone){
+    // 6) 模型下载（魔搭源，幂等可续传）：下载进程仍在跑则直接续听，否则清日志重新拉起
+    if(st.dlDone){
       hint(t("nbDeployDlOk"));
     }else{
-      nbStepSet(5);
-      cur = instListCache.find(x => x.uuid === inst.uuid) || inst;
-      if(cur.status === "running" && cur.start_mode === "non_gpu"){
-        hint(t("nbDeployNoCardSkip"));
-      }else{
-        hint(t("nbDeployNoCard"));
-        if(cur.status === "running"){
-          try{ await dlCall("/api/v1/instance/power_off", {instance_uuid: inst.uuid}); }catch(e){}
-          off = false;
-          for(let i = 0; i < 40 && !off; i++){
-            await nbWait(4000);
-            try{
-              const d = await dlCall("/api/v1/instance");
-              refresh(d);
-              const c = instListCache.find(x => x.uuid === inst.uuid);
-              if(c && (c.status === "shutdown" || c.status === "no_charge")) off = true;
-            }catch(e){}
-          }
-        }
-        try{ await dlCall("/api/v1/instance/power_on", {instance_uuid: inst.uuid, payload: "non_gpu"}); }catch(e){}
-        on = false;
-        for(let i = 0; i < 60 && !on; i++){
-          await nbWait(4000);
-          try{
-            const d = await dlCall("/api/v1/instance");
-            refresh(d);
-            const c = instListCache.find(x => x.uuid === inst.uuid);
-            if(c && c.status === "running") on = true;
-          }catch(e){}
-        }
-        if(!on){ hint(t("nbDeployFail") + t("nbDeployManual")); return; }
-      }
-      // 6) 模型下载（魔搭源，幂等可续传）：下载进程仍在跑则直接轮询续听，否则清日志重新拉起
       nbStepSet(6);
-      if(!dlRun){
+      const DL_LOG = "/root/autodl-tmp/h3_models_download.log";
+      if(!st.dlRun){
         hint(t("nbDeployDlStart"));
         const rst = await sshExec(si.host, si.port, si.pass,
           "pkill -f 'h3_models_downloa[d]' 2>/dev/null; rm -f " + DL_LOG + "; setsid bash /root/autodl-tmp/h3_models_download.sh > /dev/null 2>&1 < /dev/null & echo DL_STARTED", 30);
@@ -2499,35 +2501,19 @@ async function nbDeployRun(uuid){
       }
       if(!dlOk){ hint(t("nbDeployDlFail") + (dlErr || "timeout ") + t("nbDeployManual")); return; }
     }
-    // 7) 下载完成：关机 → 恢复正常（有卡）开机；已是有卡运行态则跳过
+    // 7) 复检：确认无剩余未完成项 → 关机 → 恢复正常（有卡）开机；已是有卡运行态则跳过
     nbStepSet(7);
-    cur = instListCache.find(x => x.uuid === inst.uuid) || inst;
+    hint(t("nbDeployDetect"));
+    const st2 = await nbProbe(si);
+    if(!(st2.compOk && st2.dlDone)){
+      hint(t("nbDeployFail") + "config " + t("nbDeployManual"));
+      return;
+    }
+    cur = instListCache.find(x => x.uuid === inst.uuid) || cur;
     if(!(cur.status === "running" && cur.start_mode !== "non_gpu")){
       hint(t("nbDeployDlOk"));
-      if(cur.status === "running"){
-        try{ await dlCall("/api/v1/instance/power_off", {instance_uuid: inst.uuid}); }catch(e){}
-        off = false;
-        for(let i = 0; i < 40 && !off; i++){
-          await nbWait(4000);
-          try{
-            const d = await dlCall("/api/v1/instance");
-            refresh(d);
-            const c = instListCache.find(x => x.uuid === inst.uuid);
-            if(c && (c.status === "shutdown" || c.status === "no_charge")) off = true;
-          }catch(e){}
-        }
-      }
-      try{ await dlCall("/api/v1/instance/power_on", {instance_uuid: inst.uuid}); }catch(e){}
-      on = false;
-      for(let i = 0; i < 60 && !on; i++){
-        await nbWait(4000);
-        try{
-          const d = await dlCall("/api/v1/instance");
-          refresh(d);
-          const c = instListCache.find(x => x.uuid === inst.uuid);
-          if(c && c.status === "running") on = true;
-        }catch(e){}
-      }
+      await nbPowerOffWait(inst.uuid);
+      if(!(await nbPowerOnWait(inst.uuid, false))){ hint(t("nbDeployFail") + t("nbDeployManual")); return; }
     }
     // 8) 验证：SSH 内 curl 本机 /h3ui/stats，返回 JSON 即端点已加载
     nbStepSet(8);
@@ -2708,14 +2694,17 @@ function instCardEl(it){
   }
   let btns = "";
   if(running){
-    btns = btn("instPowerOff('" + it.uuid + "')", t("powerOff"))
+    btns = btn("instCfgDeploy('" + it.uuid + "')", t("dbgDeploy"))
+      + btn("instPowerOff('" + it.uuid + "')", t("powerOff"))
       + btn("instRestart('" + it.uuid + "')", t("instRestart"))
       + btn("instTimedToggle('" + it.uuid + "')", timed ? t("instTimedAt") : t("instTimedSet"))
       + btn("instRelease('" + it.uuid + "')", t("instRelease"), true);
   }else if(it.status === "creating" || it.status === "starting" || it.status === "powering_on"){
-    btns = btn("instRelease('" + it.uuid + "')", t("instRelease"), true);
+    btns = btn("instCfgDeploy('" + it.uuid + "')", t("dbgDeploy"))
+      + btn("instRelease('" + it.uuid + "')", t("instRelease"), true);
   }else{
-    btns = btn("instPowerOn('" + it.uuid + "')", t("powerOn"));
+    btns = btn("instCfgDeploy('" + it.uuid + "')", t("dbgDeploy"))
+      + btn("instPowerOn('" + it.uuid + "')", t("powerOn"));
     if(it.charge_type === "payg") btns += btn("instPowerOnNonGpu('" + it.uuid + "')", t("instNonGpuBtn"));
     btns += btn("instRelease('" + it.uuid + "')", t("instRelease"), true);
   }
@@ -3432,15 +3421,19 @@ function dbgSplash(){
   }
 }
 function dbgDeploy(){
-  // 一键配置：对当前选中实例手动触发自动部署流程（开机 → SSH 部署三连 → 重启 → 验证）
+  // 兼容入口：对当前选中实例触发一键配置
   const u = $("dlInst").value;
+  if(!u){ showToast(t("pickInst")); return; }
+  instCfgDeploy(u);
+}
+function instCfgDeploy(u){
+  // 每实例卡「一键配置」：对指定实例触发自动部署（断点续跑）
   if(!u){ showToast(t("pickInst")); return; }
   localStorage.setItem("h3_inst", u);
   nbDeployFlow(u);
 }
 if(isDbg()){
   $("dbgBox").style.display = "block";
-  $("dbgCfgBtn").style.display = "";
 }
 
 connect();
