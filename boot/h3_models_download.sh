@@ -5,6 +5,8 @@ PY=/root/miniconda3/bin/python
 LOG=/root/autodl-tmp/h3_models_download.log
 
 mkdir -p $BASE/models   # 实体目录必须先在位（系统盘镜像经软链指向此处），否则 App 探测 du 取到空值
+# 基线字节：镜像 models 目录自带其他模型（约 5.6G），App 进度按「当前 du - 基线」统计本次下载增量
+echo "===== base bytes=$(du -sb $BASE/models 2>/dev/null | cut -f1) $(date +%s) =====" >> $LOG
 echo "===== start epoch=$(date +%s) $(date) =====" >> $LOG
 $PY -m pip install -q -U modelscope >> $LOG 2>&1
 

@@ -1,5 +1,12 @@
 # 更新日志
 
+## v2.07（2026-09-27）
+
+- **无卡模式彻底不碰公网地址**：v2.06 只拦了地址获取链（autoSetApi），但 `connect()`/`pollStatus()` 仍持旧 apiBase 反复请求 → 「连接失败: Failed to fetch」依旧。现 connect/pollStatus 入口均加无卡守卫：不发请求，状态固定显示「无卡模式：ComfyUI 未运行，已暂停连接」；1 秒轮询内覆盖启动时残留的失败提示
+- **修复进度虚高（47G/约41G）**：`du` 统计的是整个 models 目录，社区镜像自带其他模型（anything-v5、insightface、nsfw_detector 等约 5.6G）。下载脚本启动时记录基线字节（`base bytes=`），App 按「当前 du − 基线」统计本次增量；总修正为 5 模型实测合计 41.4 GiB（44.5 GB）
+- **修复速度显示 "--"**：modelscope 进度条带 ANSI 转义（`ESC[A`）且尾部有空行/`s/file` 行，"取最后一行"经常取不到速度。探测新增 `V:` 标记 = 全日志 grep 最近一次实时速度（支持 KB/s、MB/s、GB/s），字节差推算降级为兜底
+- versionCode 78
+
 ## v2.06（2026-09-27）
 
 - **实例状态刷新提速**：轮询间隔 4s → 1s（关机触发后的复轮询 3s → 1s），实例页状态/进度/计费更实时
