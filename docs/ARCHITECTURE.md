@@ -113,15 +113,18 @@ version 为字符串比较）→ 数量 → `order/price/preview` 估价 → `ma
   机器自动选同型号最低价空闲机，下单走 `order/instance/create/payg`（与租用弹窗同款错误分支）；
   按钮区含「充值」ghost 按钮（`openExternal` 打开 `autodl.com/recharge`，余额不足时无需离开引导）；
   可「稍后再说」跳过
-- **下单后自动部署**（v1.79 引入；v1.93 扩为「部署四连 + 无卡下载」）：下单成功 → 等实例入列并选中 →
-  自动开机等 running → 解析实例卡 `ssh_command`（`-p PORT root@HOST`）与 `root_password` →
-  原生桥 `H3App.sshExec`（JSch，MainActivity 后台线程，回调 `window.__sshDone`）执行部署四连
-  （h3ui_api.py / start_h3.sh / autodl_boot.sh / h3_models_download.sh，先 `source /etc/network_turbo`）→
-  `power_off` → **无卡模式开机**（`power_on` + `payload:"non_gpu"`，¥0.10/时）→ SSH `setsid` 后台启动
-  模型下载（~41.4 GiB），每分钟轮询日志尾行 + `du -sh` 显示进度（提示行「模型下载中（已下载 x）」），
-  出现 `===== done rc=0 miss=0` 即成功（上限 4 小时，脚本幂等可续传）→ `power_off` → 正常有卡开机 →
-  SSH 内 `curl 127.0.0.1:6006/h3ui/stats` 验证；各阶段进度写在实例页电源提示行，失败提示按 README
-  手动部署。浏览器端无原生桥自动跳过。
+- **下单后自动部署**（v1.79 引入；v1.93 挂入模型下载；v1.94 断点检测+步骤进度，`nbDeployRun` 八步）：
+  下单成功 → **[1/8]** 等实例入列并选中 → **[2/8]** 开机等 running → **[3/8]** 解析实例卡
+  `ssh_command`/`root_password` 并等 SSH 可达 → **[3.5 断点检测]** SSH 探测实例侧状态（组件 4 项在位 /
+  下载进程存活 / 日志 done 标记 / `/h3ui/stats` 可用 / models 实测大小），配合 localStorage 检查点
+  `h3_deploy_ckpt` 跳过已完成阶段、续传下载；组件齐+模型齐+有卡运行则快路径直达验证 →
+  **[4/8]** 部署四连（h3ui_api.py / start_h3.sh / autodl_boot.sh / h3_models_download.sh，
+  先 `source /etc/network_turbo`，子进度 `i/4`）→ **[5/8]** `power_off` → 无卡模式开机
+  （`power_on` + `payload:"non_gpu"`，¥0.10/时；已在无卡运行则跳过）→ **[6/8]** 模型下载
+  （~41.4 GiB，每分钟轮询日志 + `du`，显示 `{size}/约41G，{pct}%`；下载进程存活则直接续听不清日志，
+  出现 `===== done rc=0 miss=0` 即成功，上限 4 小时，脚本幂等可续传）→ **[7/8]** 关机 → 有卡开机
+  （已是有卡运行态则跳过）→ **[8/8]** SSH 内 `curl 127.0.0.1:6006/h3ui/stats` 验证（成功清除检查点）；
+  各阶段进度写在实例页电源提示行，失败提示按 README 手动部署。浏览器端无原生桥自动跳过。
   部署期间对应实例卡右上角显示脉冲「自动配置中」角标（`nbDeployingUuid` + `cfgTag`，结束自动摘除）
 
 ### 3.3 数据层（localStorage）
