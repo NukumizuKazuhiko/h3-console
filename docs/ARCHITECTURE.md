@@ -1,6 +1,6 @@
 # H3 Console 项目结构与功能文档
 
-> 更新时间：2026-09-26 · 代码基线：v1.67（v1.35–v1.63 曾长期未提交，随 v1.64 一并入库）
+> 更新时间：2026-09-26 · 代码基线：v1.74（v1.35–v1.63 曾长期未提交，随 v1.64 一并入库）
 > 逐版本变更见 [CHANGELOG.md](CHANGELOG.md)，本文只描述当前形态与设计。
 
 ## 1. 项目定位
@@ -123,10 +123,18 @@ version 为字符串比较）→ 数量 → `order/price/preview` 估价 → `ma
 - 完成后关机：队列清空后若开关打开 → 自动下载（App 内经 DownloadManager，浏览器端 blob 下载）
   → App 内等 15s / 浏览器 3s → `power_off`（一次性生效，开关状态持久化）
 
-### 3.5 AutoDL API 封装
+### 3.5 API 适配层
 
-`dlCall`(POST) / `dlGet` / `dlPut`：基址 `https://www.autodl.com`，头 `Authorization: token`，
-响应统一 `{code:"Success"}` 校验，失败重试 1 次（间隔 2s），30s 超时。
+ComfyUI 侧与 AutoDL 侧各有适配器注册表（v1.72）：`registerComfyAdapter`/`registerDlAdapter`
+注册、`useComfyAdapter`/`useDlAdapter` 切换，默认实现即原有直连行为，行为不变。
+
+- **ComfyUI 适配器接口**：`url(path)` / `nb(path)`（带防缓存）/ `wsUrl()`；
+  `api()`、`nb()`、`openWs()` 均为适配器委托
+- **AutoDL 适配器接口**：`base` / `headers()` / `request(method, path, body, params)`——
+  POST/GET/PUT 统一走 `request`：基址 `https://www.autodl.com`，头 `Authorization: token`，
+  响应统一 `{code:"Success"}` 校验，失败重试 1 次（间隔 2s），30s 超时；
+  `dlCall`/`dlGet`/`dlPut`/`dlHeaders` 与租用下单均为适配器委托
+
 `findForwardUrl` 从实例数据提取 `service_6006_domain`（拼 `https://`，无端口补 `:8443`），
 兜底匹配 `*.seetacloud.com`。
 

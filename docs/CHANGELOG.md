@@ -1,5 +1,48 @@
 # 更新日志
 
+## v1.74（2026-09-26）
+
+- **性能监测面板折叠**：与「定时关机」「高级参数」同款折叠（Alpine x-collapse，默认收起），标题沿用面板小标题排版（电光青左侧条以箭头替代）；折叠不影响数据采集，CPU/GPU/显存/内存/队列监控在收起状态下照常更新
+
+## v1.73（2026-09-26）
+
+- 创作页**高级参数折叠**：Turbo 加速 / LoRA 强度 / 种子 / Turbo 提示收进与「定时关机」同款折叠（Alpine x-collapse 展开，默认收起），分辨率与时长保持常显；折叠不影响取值，生成时照常读取
+- APK versionCode 44
+
+## v1.72（2026-09-26）
+
+- **API 层适配器化**：ComfyUI 生成侧与 AutoDL 控制台侧各自引入适配器注册表（`registerComfyAdapter`/`registerDlAdapter` + `useComfyAdapter`/`useDlAdapter` 切换，默认实现即现有直连行为，接口与重试/信封解包逻辑不变）
+  - ComfyUI 适配器接口：`url(path)` / `nb(path)`（防缓存）/ `wsUrl()`；`api()/nb()/openWs` 全部走适配器
+  - AutoDL 适配器接口：`base` / `headers()` / `request(method, path, body, params)`；`dlCall/dlGet/dlPut/dlHeaders` 及租用下单收敛为适配器委托
+- 行为无任何变化；为将来接入其他生成后端 / 算力平台留出插槽
+- APK versionCode 43
+
+## v1.71（2026-09-26）
+
+- **历史记录改版**：已生成视频列表改为真正的列表项（边框卡片行：时间 · 时长 · 提示词标签 | 播放/下载/删除 右对齐），新记录保存提示词标签
+- **历史按实例分桶**：`h3_history` 改为 `{实例uuid: [记录]}` 结构（旧平铺数据自动迁移到「未选实例」桶），在实例页选中实例后创作页视频列表自动切换；实例开关机状态变化也会即时刷新列表
+- **实例未开机时不提供播放/下载入口**：视频文件在实例的 ComfyUI 上，关机状态不可达——列表项只保留删除
+- 创作页底部预留 12px 尾部内边距，最后一条记录不再贴着悬浮导航（此前滑到底部时被导航栏挡住点不到）
+- APK versionCode 42
+
+## v1.70（2026-09-26）
+
+- **整理不规整留白**：移除三页各自 `padding-bottom:70px` 的尾部留白——body 已为悬浮导航预留 78px，两者叠加导致每页底部多出约 70px 空白（实例/设置等短页尤为明显）；现在内容统一收在导航上方 78px 处
+- 实例页「连接」label 的 16px 上边距（残留的内联 `--gapPanel`）改为与其他 label 一致的 12px
+- APK versionCode 41
+
+## v1.69（2026-09-26）
+
+- **修复触屏按钮焦点残留**：全部 `:hover` 悬停规则（按钮实色背景、ghost/imgBtn 描边、历史链接等 15 处）包进 `@media (hover:hover) and (pointer:fine)`——触屏长按/划走不再残留悬停态，视觉反馈只在按下瞬间（`:active`）与功能确认后出现
+- 长按按钮/链接/可复制文本时拦截 `contextmenu`：Android WebView 长按弹出的上下文菜单会吞掉后续 click（表现为「焦点上去了但提示词没填充」）并造成按压态抽搐；同时为按钮加 `-webkit-touch-callout:none`
+- 明确语义：点按抬起 → click 触发 → 功能执行；长按划走 → 不触发、不留痕
+- APK versionCode 40
+
+## v1.68（2026-09-26）
+
+- 滑动翻页**页间间距**：track 加 `gap:var(--gapPanel)`（16px），左右滑动时相邻两页的框与框之间露出背景间隙，落定后页面仍精确对齐视口；位移步长同步改为「页宽 + 间距」
+- APK versionCode 39
+
 ## v1.67（2026-09-26）
 
 - 底部导航**同级页面滑动切换**（Interactive Swipe / Progress-driven）：三页改为 viewport > track 横排结构，横拖实时跟手（`translate3d` + Pointer Events），松手按位移 >30% 屏宽或甩动速度（>0.4 px/ms 且移动 >4%）翻页，否则回弹（250ms 缓动）
