@@ -295,8 +295,10 @@ html[data-theme="light"] .tabPill{background:rgba(15,168,166,.11);box-shadow:ins
 
 /* 实例管理页 */
 .instCard{position:relative;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-top:10px;background:var(--panel2)}
-.nonGpuTag{position:absolute;top:-8px;right:12px;background:var(--warn);color:#fff;font-size:10px;font-weight:600;padding:2px 9px;border-radius:99px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
-.cfgTag{position:absolute;top:-8px;right:12px;background:var(--accent);color:#062b2b;font-size:10px;font-weight:600;padding:2px 9px;border-radius:99px;box-shadow:0 2px 8px rgba(0,0,0,.25);animation:cfgPulse 1.2s ease-in-out infinite}
+.tagBox{position:absolute;top:-8px;right:12px;display:flex;gap:6px;align-items:center;max-width:72%}
+.cfgTag{background:var(--accent);color:#062b2b;font-size:10px;font-weight:600;padding:2px 9px;border-radius:99px;box-shadow:0 2px 8px rgba(0,0,0,.25);animation:cfgPulse 1.2s ease-in-out infinite;flex-shrink:0}
+.nonGpuTag{background:var(--warn);color:#fff;font-size:10px;font-weight:600;padding:2px 9px;border-radius:99px;box-shadow:0 2px 8px rgba(0,0,0,.25);flex-shrink:0}
+.cfgProg{margin-top:6px;font-size:11px;font-weight:600;color:var(--accent);word-break:break-all}
 @keyframes cfgPulse{0%,100%{opacity:1}50%{opacity:.5}}
 .instHead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .instHead b{font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
@@ -598,7 +600,7 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
       <button class="ghost" onclick="dbgSplash()" data-i18n="dbgSplash">打开开屏页</button>
     </div>
   </div>
-  <div class="hint">v1.99</div>
+  <div class="hint">v2.00</div>
 </div>
 </div>
 </div>
@@ -2247,6 +2249,7 @@ async function nbDeployFlow(uuid){
   }finally{
     nbDeployingUuid = "";
     nbStepCur = 0;
+    nbDeployMsg = "";
     renderInstCards();
   }
 }
@@ -2325,7 +2328,14 @@ let nbStepCur = 0, nbStepUuid = "";
 function nbStepSet(n){ nbStepCur = n; try{ localStorage.setItem("h3_deploy_ckpt", JSON.stringify({uuid: nbStepUuid, step: n, at: Date.now()})); }catch(e){} }
 function nbCkptLoad(uuid){ try{ const j = JSON.parse(localStorage.getItem("h3_deploy_ckpt") || "null"); return (j && (!uuid || j.uuid === uuid)) ? j : null; }catch(e){ return null; } }
 function nbCkptClear(){ try{ localStorage.removeItem("h3_deploy_ckpt"); }catch(e){} }
-function nbHint(msg){ $("pwrHint").textContent = (nbStepCur > 0 ? "[" + nbStepCur + "/" + NB_STEPS + "] " : "") + msg; }
+let nbDeployMsg = "";
+function nbHint(msg){
+  const full = (nbStepCur > 0 ? "[" + nbStepCur + "/" + NB_STEPS + "] " : "") + msg;
+  nbDeployMsg = full;                 // 状态留存：renderInstCards 重渲染后进度不丢
+  $("pwrHint").textContent = full;
+  const ce = document.getElementById("cfgProg-" + nbStepUuid);
+  if(ce) ce.textContent = full;       // 实例卡内进度行，就地更新不触发重渲染
+}
 function nbSizeGB(s){ const m = String(s || "").match(/^([0-9.]+)([GM])$/); return m ? parseFloat(m[1]) * (m[2] === "G" ? 1 : 1/1024) : 0; }
 
 // ---- 断点续跑辅助（v1.99）：SSH 状态探测 / SSH 就绪 / 开关机幂等等待 ----
@@ -2485,9 +2495,9 @@ async function nbDeployRun(uuid){
         }
       }
       let dlOk = false, dlErr = "", dlT0 = Date.now();
-      for(let i = 0; i < 240; i++){ // 上限约 4 小时（无卡 ¥0.10/时，超时按失败提示，可续传重跑）
-        await nbWait(60000);
+      for(let i = 0; i < 241; i++){ // 上限约 4 小时（无卡 ¥0.10/时，超时按失败提示，可续传重跑）；先探测后等待，进入步骤即显示进度
         let r;
+        if(i > 0) await nbWait(60000);
         try{
           r = await sshExec(si.host, si.port, si.pass,
             "tail -n 3 " + DL_LOG + " 2>/dev/null; echo SIZE:$(du -sh /root/autodl-tmp/ComfyUI/models 2>/dev/null | cut -f1)", 45);
@@ -2582,7 +2592,7 @@ async function pollInstStatus(){
         $("dotInst").className = "dot " + (on ? "on" : "off");
         $("pwrOnBtn").disabled = on;
         $("pwrOffBtn").disabled = !on;
-        if(!on){
+        if(!on && !nbDeployingUuid){
           const ph = $("pwrHint").textContent;
           if(ph===t("shutting") || ph===t("autoOffDone") || ph===t("autoOffDl")) $("pwrHint").textContent = "";
           comfyOnline = false;
@@ -2627,7 +2637,7 @@ function renderInstOptions(){
 
 async function loadInstances(){
   if(!dlReady()){ $("pwrHint").textContent = t("loginFirst"); return; }
-  $("pwrHint").textContent = t("fetching");
+  if(!nbDeployingUuid) $("pwrHint").textContent = t("fetching");
   try{
     const d = await dlCall("/api/v1/instance", {});
     instListCache = d.list || [];
@@ -2635,7 +2645,7 @@ async function loadInstances(){
     const sel = $("dlInst");
     const saved = localStorage.getItem("h3_inst");
     if(saved && instListCache.some(i=>i.uuid===saved)) setSelectValue(sel, saved);
-    $("pwrHint").textContent = instListCache.length ? "" : t("noInst");
+    if(!nbDeployingUuid) $("pwrHint").textContent = instListCache.length ? "" : t("noInst");
     updateInstUI();
     if(sel.value){ setTimeout(pollInstStatus, 500); autoSetApi(); }
   }catch(e){
@@ -2683,7 +2693,9 @@ function instCardEl(it){
   const nameHtml = editing
     ? '<input type="text" id="rnInput-' + u + '" class="instNameInput" data-uuid="' + u + '" data-old="' + esc(it.name || "") + '" value="' + esc(it.name || "") + '" maxlength="32" onblur="instRenameBlur(this)" onkeydown="instRenameKey(event, this)">'
     : instNameTag(it);
-  let body = nameHtml + (nbDeployingUuid === it.uuid ? '<span class="cfgTag">' + t("nbCfgBadge") + '</span>' : '') + (nonGpuActive ? '<span class="nonGpuTag">' + t("instNonGpuBadge") + '</span>' : '') + '<span class="instRegion">' + esc(region) + '</span></div>' + '<div class="instMeta">' + meta + '</div>';
+  const tagHtml = (nbDeployingUuid === it.uuid ? '<span class="cfgTag">' + t("nbCfgBadge") + '</span>' : '') + (nonGpuActive ? '<span class="nonGpuTag">' + t("instNonGpuBadge") + '</span>' : '');
+  let body = nameHtml + (tagHtml ? '<span class="tagBox">' + tagHtml + '</span>' : '') + '<span class="instRegion">' + esc(region) + '</span></div>' + '<div class="instMeta">' + meta + '</div>'
+    + (nbDeployingUuid === it.uuid && nbDeployMsg ? '<div class="cfgProg" id="cfgProg-' + it.uuid + '">' + esc(nbDeployMsg) + '</div>' : '');
   if(it.ssh_command) body += '<div class="instSsh">'
     + '<span class="copyable" data-v="' + esc(it.ssh_command) + '" onclick="copyVal(this)" title="' + t("clickCopy") + '">ssh ***</span>'
     + (it.root_password ? ' · ' + t("instPwd") + ' <span class="copyable" data-v="' + esc(it.root_password) + '" onclick="copyVal(this)" title="' + t("clickCopy") + '">***</span>' : '')
@@ -3258,10 +3270,10 @@ async function finishRun(url, errMsg, fname, serverElapsed){
   }else{
     if($("autoOff").checked && dlReady() && $("dlInst").value){
       if(url && !errMsg && instOn){
-        $("pwrHint").textContent = t("autoOffDl");
+        if(!nbDeployingUuid) $("pwrHint").textContent = t("autoOffDl");
         await new Promise(r=>setTimeout(r, window.H3App ? 15000 : 3000));
       }
-      $("pwrHint").textContent = t("autoOffDone");
+      if(!nbDeployingUuid) $("pwrHint").textContent = t("autoOffDone");
       showToast(t("autoOffDone"));
       doPowerOff();
     }
