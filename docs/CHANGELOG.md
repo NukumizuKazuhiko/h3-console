@@ -1,5 +1,19 @@
 # 更新日志
 
+## v1.93（2026-09-26）
+- **模型下载挂入首次自动部署流程**（`nbDeployRun`）：
+  ① 部署三连扩为**四连**——新增下发 `boot/h3_models_download.sh` 到 `/root/autodl-tmp/`；
+  ② 首次重启改为 **关机 → 无卡模式开机**（`power_on` + `payload:"non_gpu"`，¥0.10/时，
+  模型下载不需要 GPU）；③ 无卡模式下 SSH `setsid` 后台启动模型下载（魔搭源，幂等可续传，
+  先 `pkill` 防重跑冲突 + 清日志），每分钟轮询日志尾行与 `du -sh` 进度，提示行实时显示
+  「模型下载中（已下载 x，已用时 y 分钟）」，出现 `===== done rc=0 miss=0` 判定成功
+  （轮询上限 4 小时，超时/校验失败即中断提示，可重跑续传）；④ 下载完成 → 关机 →
+  **正常有卡开机** → 接续原有 `/h3ui/stats` 端点验证
+- i18n 新增 `nbDeployNoCard` / `nbDeployDlStart` / `nbDeployDlWait`（含 {size}/{min} 占位）/
+  `nbDeployDlFail`；`nbDeployOk` 更新为「模型已下载」；`pkill` 模式用 `[d]` 方括号技巧避免误杀自身 shell
+- 实例侧开机钩子 `autodl_boot.sh` 行为不变（每次开机刷新 h3ui_api.py + 拉起 ComfyUI），
+  无卡下载期间其 `--cpu` ComfyUI 可能被 2GB cgroup OOM，不影响下载进程
+
 ## v1.92（2026-09-26）
 - **生成提交改走实例侧官方文档风格 API**（`/h3ui/v1/video_generation`）：工作流图固化在服务端
   （`h3ui_api.py` custom node），App 只传业务参数（prompt/分辨率/时长/seed/turbo/首尾帧），
