@@ -10,8 +10,8 @@ android {
         applicationId "com.h3.console"
         minSdk 24
         targetSdk 34
-        versionCode 35
-        versionName "1.64"
+        versionCode 38
+        versionName "1.67"
     }
 
     buildTypes {

@@ -1,6 +1,6 @@
 # H3 Console 项目结构与功能文档
 
-> 更新时间：2026-09-26 · 代码基线：v1.64（v1.35–v1.63 曾长期未提交，随 v1.64 一并入库）
+> 更新时间：2026-09-26 · 代码基线：v1.67（v1.35–v1.63 曾长期未提交，随 v1.64 一并入库）
 > 逐版本变更见 [CHANGELOG.md](CHANGELOG.md)，本文只描述当前形态与设计。
 
 ## 1. 项目定位
@@ -48,9 +48,13 @@ docs/CHANGELOG.md          版本变更记录
   Tom Select 官方 default 皮肤之上用同特异性选择器覆盖为本页色卡皮肤（行 276–300）
 - **主题**：`:root` 暗色 + `html[data-theme="light"]` 全套变量；色卡源自 codex AGENTS.md
   （曜石黑底 + 混凝土白 + 电光青 #26CDCB 等）。间距同样令牌化：`--gapPanel/--gapCol/--gapGrid/--gapInline`
-- **App 壳布局**：body 固定 100dvh 纵向 flex；三页 `#pagesWrap > div` 为 grid 叠放的独立滚动容器
-  （`overflow-y:auto + overscroll-behavior:contain`），切页纯 transform 横移 + 高亮药丸滑动，
-  每页保留自己的滚动位置
+- **App 壳布局**：body 固定 100dvh 纵向 flex；三页为 `#pagesWrap > #pagesTrack > div` 横排 track
+  结构（各页 `overflow-y:auto + overscroll-behavior:contain` 独立滚动，保留各自滚动位置）
+- **滑动翻页 pager（v1.67）**：Pointer Events 驱动，横拖 track 实时跟手（`translate3d`），
+  竖向手势让位原生滚动（`touch-action:pan-y` + 8px 轴向判定）；松手按位移 >30% 屏宽或
+  甩动速度（>0.4px/ms 且移动 >4%）翻页，否则回弹；边缘 0.25 阻尼；输入框/按钮/下拉等
+  交互元素不劫持手势。连续进度 `pageProgress` 驱动高亮药丸与图标缩放/文字透明度插值；
+  页签点击与滑动走同一 pager，页面永不销毁重建
 - **底部导航**：悬浮胶囊液态玻璃（毛玻璃 blur+saturate），三个页签：创作 / 实例 / 设置
 
 ### 3.2 三页功能
