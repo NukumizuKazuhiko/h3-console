@@ -4,6 +4,7 @@ BASE=/root/autodl-tmp/ComfyUI
 PY=/root/miniconda3/bin/python
 LOG=/root/autodl-tmp/h3_models_download.log
 
+mkdir -p $BASE/models   # 实体目录必须先在位（系统盘镜像经软链指向此处），否则 App 探测 du 取到空值
 echo "===== start epoch=$(date +%s) $(date) =====" >> $LOG
 $PY -m pip install -q -U modelscope >> $LOG 2>&1
 

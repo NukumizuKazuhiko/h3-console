@@ -600,7 +600,7 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
       <button class="ghost" onclick="dbgSplash()" data-i18n="dbgSplash">打开开屏页</button>
     </div>
   </div>
-  <div class="hint">v2.01</div>
+  <div class="hint">v2.02</div>
 </div>
 </div>
 </div>
@@ -1117,7 +1117,7 @@ zh: {
  loginInApp:"请在手机端 App 内使用登录", logged:"已登录", loginFirst:"请先登录", loginExpired:"登录已过期，请重新登录",
  splashTagline:"登录 AutoDL 账号后开始使用",
  modeLabel:"使用模式", modeChange:"重新选择", modeTitle:"选择使用模式", modeSub:"按使用经验调整界面引导，可随时在设置中更改", modeNewbie:"新手", modeNewbieDesc:"初次使用 AutoDL，需要更多引导", modeExpert:"老手", modeExpertDesc:"熟练使用 ComfyUI / AutoDL，直接上手", newbieTip:"新手提示：租用实例 → 开机 → 选择实例 → 创作页生成 → 完成后定时关机省成本",
- nbTitle:"租用新机器", nbSub:"只需选择显卡型号，地区按空闲数量自动匹配，镜像自动使用 ComfyUI v18；创建后自动开机并通过 SSH 部署组件", nbGpuLabel:"GPU 型号", nbRegionLabel:"地区（自动匹配）", nbImage:"镜像：ComfyUI v18 社区镜像（自动选择）", nbLoading:"正在查询各地区空闲显卡…", nbRegionAuto:"{name} · 空闲 {idle} 张 · ¥{p}/时", nbIdleSum:"（空闲 {idle} 张）", nbPriceFrom:" · ¥{p}/时起", nbSkip:"稍后再说", nbOffline:"所选机器当前不可下单，请重试", nbRetry:"请重试或稍后再试", nbDeployStart:"正在等待新实例进入列表…", nbDeployPowerOn:"实例创建成功，正在开机…", nbDeployWaitRun:"开机中，等待实例就绪（约 1–2 分钟）…", nbDeploySsh:"正在通过 SSH 部署实例侧组件（监测/删除端点 + 启动脚本 + 开机自启 + 模型下载脚本）…", nbDeployNoCard:"组件部署完成，正在关机并无卡模式开机（¥0.10/时）下载模型…", nbDeployDlStart:"无卡模式已就绪，后台启动模型下载（魔搭源，约 41 GB，可续传）…", nbDeployDlWait:"模型下载中（{size}/约41G，{pct}%，已用时 {min} 分钟）…", nbDeployDlOk:"模型下载完成，正在关机并恢复正常（有卡）开机…", nbDeployDlFail:"模型下载失败：", nbDeploySkip:"实例侧组件已在位，跳过下发", nbDeployDetect:"正在检测实例侧配置状态…", nbDeployNoCardSkip:"实例已处于无卡模式，直接续传下载", nbResume:"检测到上次部署进度，自动续跑", nbAllReady:"组件与模型均已在位，无需配置", nbDeployVerify:"已开机，等待 ComfyUI 启动并验证 /h3ui/stats 端点…", nbDeployOk:"实例环境就绪：模型已下载，性能监测与云端删除端点已启用", nbDeployFail:"自动部署中断：", nbDeployManual:"（可在实例 SSH 终端按 README 手动执行部署命令）", nbSshNoInfo:"未获取到实例 SSH 信息，已跳过自动部署", nbCfgBadge:"自动配置中…", dbgNewbie:"模拟新手", dbgClear:"清除数据", dbgSplash:"打开开屏页", dbgDeploy:"一键配置",
+ nbTitle:"租用新机器", nbSub:"只需选择显卡型号，地区按空闲数量自动匹配，镜像自动使用 ComfyUI v18；创建后自动开机并通过 SSH 部署组件", nbGpuLabel:"GPU 型号", nbRegionLabel:"地区（自动匹配）", nbImage:"镜像：ComfyUI v18 社区镜像（自动选择）", nbLoading:"正在查询各地区空闲显卡…", nbRegionAuto:"{name} · 空闲 {idle} 张 · ¥{p}/时", nbIdleSum:"（空闲 {idle} 张）", nbPriceFrom:" · ¥{p}/时起", nbSkip:"稍后再说", nbOffline:"所选机器当前不可下单，请重试", nbRetry:"请重试或稍后再试", nbDeployStart:"正在等待新实例进入列表…", nbDeployPowerOn:"实例创建成功，正在开机…", nbDeployWaitRun:"开机中，等待实例就绪（约 1–2 分钟）…", nbDeploySsh:"正在通过 SSH 部署实例侧组件（监测/删除端点 + 启动脚本 + 开机自启 + 模型下载脚本）…", nbDeployNoCard:"组件部署完成，正在关机并无卡模式开机（¥0.10/时）下载模型…", nbDeployDlStart:"无卡模式已就绪，后台启动模型下载（魔搭源，约 41 GB，可续传）…", nbDeployDlWait:"模型下载中（{size}/约41G，{pct}%，已用时 {min} 分钟）…", nbDeployDlOk:"模型下载完成，正在关机并恢复正常（有卡）开机…", nbDeployDlFail:"模型下载失败：", nbDeploySkip:"实例侧组件已在位，跳过下发", nbLayoutFix:"检测到 ComfyUI 本体仍在系统盘，正在迁移到数据盘（视体积约 1–3 分钟）…", nbDeployDetect:"正在检测实例侧配置状态…", nbDeployNoCardSkip:"实例已处于无卡模式，直接续传下载", nbResume:"检测到上次部署进度，自动续跑", nbAllReady:"组件与模型均已在位，无需配置", nbDeployVerify:"已开机，等待 ComfyUI 启动并验证 /h3ui/stats 端点…", nbDeployOk:"实例环境就绪：模型已下载，性能监测与云端删除端点已启用", nbDeployFail:"自动部署中断：", nbDeployManual:"（可在实例 SSH 终端按 README 手动执行部署命令）", nbSshNoInfo:"未获取到实例 SSH 信息，已跳过自动部署", nbCfgBadge:"自动配置中…", dbgNewbie:"模拟新手", dbgClear:"清除数据", dbgSplash:"打开开屏页", dbgDeploy:"一键配置",
  pwrCtl:"电源控制",
  fetching:"获取中…", noInst:"暂无实例", fetchFail:"获取失败：", noInstSel:"未选择实例",
  queryFail:"查询失败：", instOff:"实例未开机",
@@ -1182,7 +1182,7 @@ en: {
  loginInApp:"Please use login inside the mobile App", logged:"Logged in", loginFirst:"Please log in first", loginExpired:"Session expired, please log in again",
  splashTagline:"Sign in to your AutoDL account to start",
  modeLabel:"Usage mode", modeChange:"Change", modeTitle:"Choose usage mode", modeSub:"Adjusts guidance by experience; change anytime in Settings", modeNewbie:"Beginner", modeNewbieDesc:"First time with AutoDL — extra guidance", modeExpert:"Expert", modeExpertDesc:"Comfortable with ComfyUI / AutoDL — jump right in", newbieTip:"Tip: rent instance → power on → pick instance → generate on Create page → schedule shutdown to save cost",
- nbTitle:"Rent a new machine", nbSub:"Just pick a GPU type — region is matched automatically by idle count, image is set to ComfyUI v18; after ordering it powers on and deploys the components via SSH", nbGpuLabel:"GPU type", nbRegionLabel:"Region (auto-matched)", nbImage:"Image: ComfyUI v18 community image (auto-selected)", nbLoading:"Checking idle GPUs across regions…", nbRegionAuto:"{name} · {idle} idle · ¥{p}/h", nbIdleSum:" ({idle} idle)", nbPriceFrom:" · from ¥{p}/h", nbSkip:"Later", nbOffline:"The selected machine cannot take orders right now — please retry", nbRetry:"please retry or try again later", nbDeployStart:"Waiting for the new instance to appear…", nbDeployPowerOn:"Instance created — powering on…", nbDeployWaitRun:"Booting, waiting for the instance to be ready (~1–2 min)…", nbDeploySsh:"Deploying instance-side components via SSH (stats/delete endpoints + start script + boot hook + model download script)…", nbDeployNoCard:"Deployed — powering off and rebooting in no-GPU mode (¥0.10/h) for model download…", nbDeployDlStart:"No-GPU mode ready — starting model download in background (ModelScope, ~41 GB, resumable)…", nbDeployDlWait:"Downloading models ({size} of ~41G, {pct}%, {min} min elapsed)…", nbDeployDlOk:"Models downloaded — powering off and rebooting with GPU…", nbDeployDlFail:"Model download failed: ", nbDeploySkip:"Components already present — skipping upload", nbDeployDetect:"Checking instance deploy state…", nbDeployNoCardSkip:"Already in no-GPU mode — resuming download directly", nbResume:"Previous deploy progress detected — resuming", nbAllReady:"Components & models present — nothing to do", nbDeployVerify:"Booted — waiting for ComfyUI and verifying /h3ui/stats…", nbDeployOk:"Instance environment ready: models downloaded, monitoring & delete endpoints enabled", nbDeployFail:"Auto-deploy interrupted: ", nbDeployManual:" (you can run the deploy commands manually in the instance SSH terminal per README)", nbSshNoInfo:"No SSH info found — auto-deploy skipped", nbCfgBadge:"Auto-configuring…", dbgNewbie:"Simulate newbie", dbgClear:"Clear data", dbgSplash:"Open splash", dbgDeploy:"One-click deploy",
+ nbTitle:"Rent a new machine", nbSub:"Just pick a GPU type — region is matched automatically by idle count, image is set to ComfyUI v18; after ordering it powers on and deploys the components via SSH", nbGpuLabel:"GPU type", nbRegionLabel:"Region (auto-matched)", nbImage:"Image: ComfyUI v18 community image (auto-selected)", nbLoading:"Checking idle GPUs across regions…", nbRegionAuto:"{name} · {idle} idle · ¥{p}/h", nbIdleSum:" ({idle} idle)", nbPriceFrom:" · from ¥{p}/h", nbSkip:"Later", nbOffline:"The selected machine cannot take orders right now — please retry", nbRetry:"please retry or try again later", nbDeployStart:"Waiting for the new instance to appear…", nbDeployPowerOn:"Instance created — powering on…", nbDeployWaitRun:"Booting, waiting for the instance to be ready (~1–2 min)…", nbDeploySsh:"Deploying instance-side components via SSH (stats/delete endpoints + start script + boot hook + model download script)…", nbDeployNoCard:"Deployed — powering off and rebooting in no-GPU mode (¥0.10/h) for model download…", nbDeployDlStart:"No-GPU mode ready — starting model download in background (ModelScope, ~41 GB, resumable)…", nbDeployDlWait:"Downloading models ({size} of ~41G, {pct}%, {min} min elapsed)…", nbDeployDlOk:"Models downloaded — powering off and rebooting with GPU…", nbDeployDlFail:"Model download failed: ", nbDeploySkip:"Components already present — skipping upload", nbLayoutFix:"ComfyUI is still on the system disk — migrating it to the data disk (~1–3 min depending on size)…", nbDeployDetect:"Checking instance deploy state…", nbDeployNoCardSkip:"Already in no-GPU mode — resuming download directly", nbResume:"Previous deploy progress detected — resuming", nbAllReady:"Components & models present — nothing to do", nbDeployVerify:"Booted — waiting for ComfyUI and verifying /h3ui/stats…", nbDeployOk:"Instance environment ready: models downloaded, monitoring & delete endpoints enabled", nbDeployFail:"Auto-deploy interrupted: ", nbDeployManual:" (you can run the deploy commands manually in the instance SSH terminal per README)", nbSshNoInfo:"No SSH info found — auto-deploy skipped", nbCfgBadge:"Auto-configuring…", dbgNewbie:"Simulate newbie", dbgClear:"Clear data", dbgSplash:"Open splash", dbgDeploy:"One-click deploy",
  pwrCtl:"Power controls",
  fetching:"Fetching…", noInst:"No instances", fetchFail:"Fetch failed: ", noInstSel:"No instance selected",
  queryFail:"Query failed: ", instOff:"Instance is off",
@@ -2342,6 +2342,7 @@ function nbSizeGB(s){ const m = String(s || "").match(/^([0-9.]+)([GM])$/); retu
 async function nbProbe(si){
   const DL_LOG = "/root/autodl-tmp/h3_models_download.log";
   const det = await sshExec(si.host, si.port, si.pass,
+    "echo C0:$(test -f /root/autodl-tmp/ComfyUI/main.py && echo 1 || echo 0);" +
     "echo C1:$(test -f /root/autodl-tmp/ComfyUI/custom_nodes/h3ui_api.py && echo 1 || echo 0);" +
     "echo C2:$(test -f /root/autodl-tmp/ComfyUI/start_h3.sh && echo 1 || echo 0);" +
     "echo C3:$(grep -q 'H3 Console' /etc/autodl.sh 2>/dev/null && echo 1 || echo 0);" +
@@ -2352,6 +2353,7 @@ async function nbProbe(si){
     "echo AO:$(curl -sf -m 5 http://127.0.0.1:6006/h3ui/stats >/dev/null 2>&1 && echo 1 || echo 0)", 30);
   const gv = k => { const m = String(det.out || "").match(new RegExp(k + ":(\\d+)")); return m ? parseInt(m[1]) : 0; };
   return {
+    mainOk: gv("C0") > 0,
     compOk: !!(gv("C1") && gv("C2") && gv("C3") && gv("C4")),
     dlDone: gv("DD") > 0, dlRun: gv("DR") > 0, apiOk: gv("AO") > 0,
     sz: (String(det.out || "").match(/DS:(\S+)/) || [])[1] || "0"
@@ -2433,7 +2435,7 @@ async function nbDeployRun(uuid){
       si = await nbEnsureSsh(inst, refresh);
       if(!si){ hint(t("nbDeployFail") + "ssh " + t("nbDeployManual")); return; }
       st = await nbProbe(si);
-      if(st.compOk && st.dlDone){
+      if(st.compOk && st.dlDone && st.mainOk){
         hint(t("nbAllReady"));           // 已配置完毕：不管
         showToast(t("nbDeployOk"));
         nbCkptClear();
@@ -2458,6 +2460,37 @@ async function nbDeployRun(uuid){
     if(!st) st = await nbProbe(si);
     const prevCkpt = nbCkptLoad(inst.uuid);
     if((prevCkpt && prevCkpt.step > 1) || st.compOk || st.dlDone || st.dlRun || st.apiOk) showToast(t("nbResume"));
+    // 4.5) 布局就绪：社区镜像内置 ComfyUI 在系统盘 /root/ComfyUI，开机脚本会将其迁移到数据盘；
+    //      若迁移未发生（如部署的 mkdir 提前占位），这里主动完成等效迁移（幂等：本体已在数据盘则跳过）
+    if(!st.mainOk){
+      hint(t("nbLayoutFix"));
+      const LAYOUT = "if [ ! -f /root/autodl-tmp/ComfyUI/main.py ]; then " +
+        "if [ -f /root/ComfyUI/main.py ]; then " +
+          "S=/root/autodl-tmp/.h3_keep; mkdir -p $S; " +
+          "mv /root/autodl-tmp/ComfyUI/custom_nodes/h3ui_api.py $S/ 2>/dev/null; " +
+          "mv /root/autodl-tmp/ComfyUI/start_h3.sh $S/ 2>/dev/null; " +
+          "SZ=$(du -sb /root/autodl-tmp/ComfyUI 2>/dev/null | cut -f1); " +
+          "if [ ${SZ:-0} -lt 10485760 ]; then rm -rf /root/autodl-tmp/ComfyUI; fi; " +
+          "if [ -d /root/autodl-tmp/ComfyUI ]; then mv /root/ComfyUI/* /root/autodl-tmp/ComfyUI/ 2>/dev/null; rm -rf /root/ComfyUI; else mv /root/ComfyUI /root/autodl-tmp/ComfyUI; fi; " +
+          "mkdir -p /root/autodl-tmp/ComfyUI/custom_nodes; " +
+          "mv $S/start_h3.sh /root/autodl-tmp/ComfyUI/ 2>/dev/null; " +
+          "mv $S/h3ui_api.py /root/autodl-tmp/ComfyUI/custom_nodes/ 2>/dev/null; " +
+          "rm -rf $S; " +
+        "fi; " +
+      "fi; " +
+      "echo LAYOUT_OK";
+      const rL = await sshExec(si.host, si.port, si.pass, LAYOUT, 600); // 跨盘 mv 可达数 GB，放宽超时
+      if(rL.code !== 0 || rL.out.indexOf("LAYOUT_OK") < 0){
+        hint(t("nbDeployFail") + "layout " + (rL.out || ("exit " + rL.code)).trim().slice(-160) + " " + t("nbDeployManual"));
+        return;
+      }
+      const rM = await sshExec(si.host, si.port, si.pass, "test -f /root/autodl-tmp/ComfyUI/main.py && echo MAIN_OK || echo MAIN_MISSING", 30);
+      if(rM.out.indexOf("MAIN_OK") < 0){
+        hint(t("nbDeployFail") + "comfyui main.py " + t("nbDeployManual"));
+        return;
+      }
+      st.compOk = !!(await nbProbe(si)).compOk; // 迁移后组件位置可能变化，重探
+    }
     // 5) 部署四连（GitHub 不通先走学术加速）：API 端点 / 启动脚本 / 开机自启 / 模型下载脚本
     if(st.compOk){
       hint(t("nbDeploySkip"));
@@ -2494,7 +2527,7 @@ async function nbDeployRun(uuid){
           return;
         }
       }
-      let dlOk = false, dlErr = "", dlT0 = Date.now(), lastSz = "?", lastPct = 0, lastMin = 0;
+      let dlOk = false, dlErr = "", dlT0 = Date.now(), lastSz = "0G", lastPct = 0, lastMin = 0;
       const DL_DIR = "/root/autodl-tmp/ComfyUI/models";
       const DL_TOTAL = 42 * 1024 * 1024 * 1024; // 5 个模型约 41.4 GiB，留少量余量
       for(let i = 0; i < 241; i++){ // 上限约 4 小时（无卡 ¥0.10/时）；先探测后等待；进度/用时全部取自实例端
@@ -2513,7 +2546,7 @@ async function nbDeployRun(uuid){
         const g = k => { const m = out.match(new RegExp("(?:^|\\n)" + k + ":(\\S*)")); return m ? m[1] : ""; };
         if(out.indexOf("B:") < 0 && out.indexOf("H:") < 0) continue; // 探测失败（超时/断连）：沿用上次进度，不显示问号
         const bytes = parseInt(g("B"), 10) || 0;
-        const sz = g("H") || (bytes ? (bytes / 1073741824).toFixed(1) + "G" : lastSz);
+        const sz = g("H") || (bytes ? (bytes / 1073741824).toFixed(1) + "G" : (g("B") !== "" ? "0G" : lastSz));
         const pct = bytes ? Math.min(99, Math.round(bytes / DL_TOTAL * 100)) : lastPct;
         // 已用时：实例日志起始 epoch（新版脚本直接有；旧版日志由实例端 date -d 换算），都没有才退回本地计时
         const se = parseInt(g("S"), 10) || parseInt(g("T"), 10) || 0;
