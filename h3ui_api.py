@@ -101,11 +101,21 @@ def _err(code, msg, status=400):
     return web.json_response({"base_resp": {"status_code": code, "status_msg": msg}}, status=status)
 
 def _port():
+    """兼容 --port 6006 与 --port=6006 两种写法（启动器用等号连写，旧实现只认分离写法
+    导致自调永远打到默认 8188 → object_info/提交全部 Connection refused）。"""
     a = sys.argv
-    try:
-        return int(a[a.index("--port") + 1])
-    except Exception:
-        return 8188
+    for i, tk in enumerate(a):
+        if tk == "--port" and i + 1 < len(a):
+            try:
+                return int(a[i + 1])
+            except Exception:
+                pass
+        if tk.startswith("--port="):
+            try:
+                return int(tk.split("=", 1)[1])
+            except Exception:
+                pass
+    return 8188
 
 async def _self_http(method, path, payload=None, timeout=60):
     """进程内自调 ComfyUI 原生 HTTP（提交/历史/对象信息），避免依赖内部 API 变动。"""
@@ -133,7 +143,12 @@ async def _objinfo(force=False):
             _OBJINFO = d
             _OBJINFO_AT = time.time()
     except Exception:
-        pass
+        try:
+            import traceback
+            with open("/root/autodl-tmp/h3ui_api.log", "a") as f:
+                f.write("[%s] objinfo fail: %s\n" % (time.strftime("%F %T"), traceback.format_exc()[-600:]))
+        except Exception:
+            pass
     return _OBJINFO or {}
 
 def _names(oi, node, field):
@@ -142,6 +157,23 @@ def _names(oi, node, field):
         return v if isinstance(v, list) else []
     except Exception:
         return []
+
+def _fp_names(*dirs):
+    """进程内直读 ComfyUI folder_paths（权威来源，不依赖自调 HTTP）。"""
+    out = []
+    try:
+        import folder_paths
+        for d in dirs:
+            try:
+                out += [x for x in folder_paths.get_filename_list(d) if x]
+            except Exception:
+                pass
+    except Exception:
+        pass
+    return out
+
+def _merge(a, b):
+    return a + [x for x in b if x not in a]
 
 def _pick(names, prefs):
     for p in prefs:
@@ -158,13 +190,13 @@ REQUIRED_MODELS = {
 }
 
 async def _resolve_models(oi):
-    """返回 (选中的模型文件 dict, 缺失清单)。缺失时不猜文件名。"""
+    """返回 (选中的模型文件 dict, 缺失清单)。folder_paths 直读优先，object_info 兜底合并。"""
     missing = []
     m = {}
-    unet = _names(oi, "UNETLoader", "unet_name")
-    clip = _names(oi, "CLIPLoader", "clip_name")
-    lora = _names(oi, "LoraLoaderModelOnly", "lora_name")
-    vae = _names(oi, "VAELoader", "vae_name")
+    unet = _merge(_fp_names("diffusion_models", "unet"), _names(oi, "UNETLoader", "unet_name"))
+    clip = _merge(_fp_names("text_encoders", "clip"), _names(oi, "CLIPLoader", "clip_name"))
+    lora = _merge(_fp_names("loras"), _names(oi, "LoraLoaderModelOnly", "lora_name"))
+    vae = _merge(_fp_names("vae"), _names(oi, "VAELoader", "vae_name"))
     m["diffusion"] = _pick(unet, ["fl2va_pruned_int8_convrot", "fl2va_int8_convrot", "fl2va_pruned_fp8", "fl2va_pruned_int4", "fl2va_bf16", "fl2va"])
     m["text_encoder"] = _pick(clip, ["nvfp4_awq", "int8_convrot", "int4_convrot", "bf16"])
     m["turbo_lora"] = _pick(lora, ["fl2v_turbo_8step", "fl2v_turbo_4step"])
