@@ -4,7 +4,7 @@ BASE=/root/autodl-tmp/ComfyUI
 PY=/root/miniconda3/bin/python
 LOG=/root/autodl-tmp/h3_models_download.log
 
-echo "===== start $(date) =====" >> $LOG
+echo "===== start epoch=$(date +%s) $(date) =====" >> $LOG
 $PY -m pip install -q -U modelscope >> $LOG 2>&1
 
 $PY - <<'EOF' >> $LOG 2>&1
@@ -31,5 +31,5 @@ for f in diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors \
          loras/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors; do
   if [ -f $BASE/models/$f ]; then echo "OK $f" >> $LOG; else echo "MISSING $f" >> $LOG; MISS=1; fi
 done
-echo "===== done rc=$RC miss=$MISS $(date) =====" >> $LOG
+echo "===== done rc=$RC miss=$MISS epoch=$(date +%s) $(date) =====" >> $LOG
 exit $(( RC || MISS ))

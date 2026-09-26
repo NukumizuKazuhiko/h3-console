@@ -600,7 +600,7 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
       <button class="ghost" onclick="dbgSplash()" data-i18n="dbgSplash">打开开屏页</button>
     </div>
   </div>
-  <div class="hint">v2.00</div>
+  <div class="hint">v2.01</div>
 </div>
 </div>
 </div>
@@ -2494,20 +2494,35 @@ async function nbDeployRun(uuid){
           return;
         }
       }
-      let dlOk = false, dlErr = "", dlT0 = Date.now();
-      for(let i = 0; i < 241; i++){ // 上限约 4 小时（无卡 ¥0.10/时，超时按失败提示，可续传重跑）；先探测后等待，进入步骤即显示进度
+      let dlOk = false, dlErr = "", dlT0 = Date.now(), lastSz = "?", lastPct = 0, lastMin = 0;
+      const DL_DIR = "/root/autodl-tmp/ComfyUI/models";
+      const DL_TOTAL = 42 * 1024 * 1024 * 1024; // 5 个模型约 41.4 GiB，留少量余量
+      for(let i = 0; i < 241; i++){ // 上限约 4 小时（无卡 ¥0.10/时）；先探测后等待；进度/用时全部取自实例端
         let r;
         if(i > 0) await nbWait(60000);
         try{
           r = await sshExec(si.host, si.port, si.pass,
-            "tail -n 3 " + DL_LOG + " 2>/dev/null; echo SIZE:$(du -sh /root/autodl-tmp/ComfyUI/models 2>/dev/null | cut -f1)", 45);
+            "tail -n 3 " + DL_LOG + " 2>/dev/null; " +
+            "echo B:$(du -sb " + DL_DIR + " 2>/dev/null | cut -f1); " +
+            "echo H:$(du -sh " + DL_DIR + " 2>/dev/null | cut -f1); " +
+            "echo S:$(grep -m1 -oE 'start epoch=[0-9]+' " + DL_LOG + " 2>/dev/null | cut -d= -f2); " +
+            "echo T:$(grep -m1 -oE 'start .*' " + DL_LOG + " 2>/dev/null | grep -v epoch | cut -d' ' -f2- | xargs -r -I{} date -d {} +%s 2>/dev/null); " +
+            "echo D:$(grep -c 'done rc=0 miss=0' " + DL_LOG + " 2>/dev/null)", 90);
         }catch(e){ continue; }
         const out = String((r && r.out) || "");
-        const sz = (out.match(/SIZE:(\S+)/) || [])[1] || "?";
-        const pct = Math.min(99, Math.round(nbSizeGB(sz) / 42 * 100));
-        hint(t("nbDeployDlWait").replace("{size}", sz).replace("{pct}", String(pct)).replace("{min}", String(Math.round((Date.now()-dlT0)/60000))));
+        const g = k => { const m = out.match(new RegExp("(?:^|\\n)" + k + ":(\\S*)")); return m ? m[1] : ""; };
+        if(out.indexOf("B:") < 0 && out.indexOf("H:") < 0) continue; // 探测失败（超时/断连）：沿用上次进度，不显示问号
+        const bytes = parseInt(g("B"), 10) || 0;
+        const sz = g("H") || (bytes ? (bytes / 1073741824).toFixed(1) + "G" : lastSz);
+        const pct = bytes ? Math.min(99, Math.round(bytes / DL_TOTAL * 100)) : lastPct;
+        // 已用时：实例日志起始 epoch（新版脚本直接有；旧版日志由实例端 date -d 换算），都没有才退回本地计时
+        const se = parseInt(g("S"), 10) || parseInt(g("T"), 10) || 0;
+        const min = se ? Math.max(1, Math.round((Date.now() / 1000 - se) / 60)) : Math.round((Date.now() - dlT0) / 60000);
+        lastSz = sz; lastPct = pct; lastMin = min;
+        hint(t("nbDeployDlWait").replace("{size}", sz).replace("{pct}", String(pct)).replace("{min}", String(min)));
         const dm = out.match(/===== done rc=(\d+) miss=(\d+)/);
         if(dm){ dlOk = (dm[1] === "0" && dm[2] === "0"); if(!dlOk) dlErr = out.trim().slice(-200); break; }
+        if(parseInt(g("D"), 10) > 0){ dlOk = true; break; }
       }
       if(!dlOk){ hint(t("nbDeployDlFail") + (dlErr || "timeout ") + t("nbDeployManual")); return; }
     }
