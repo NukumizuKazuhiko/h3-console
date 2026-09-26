@@ -10,8 +10,8 @@ android {
         applicationId "com.h3.console"
         minSdk 24
         targetSdk 34
-        versionCode 45
-        versionName "1.74"
+        versionCode 63
+        versionName "1.92"
     }
 
     buildTypes {
@@ -27,4 +27,6 @@ android {
 }
 dependencies {
     implementation 'androidx.browser:browser:1.8.0'
+    implementation 'androidx.webkit:webkit:1.10.0'
+    implementation 'com.github.mwiede:jsch:0.2.17'
 }

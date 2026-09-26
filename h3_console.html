@@ -246,6 +246,37 @@ button.ghost{background:transparent;border:1px solid var(--border);color:var(--t
 .rentTab{flex:none;height:30px;padding:0 12px;font-size:12px;border-radius:8px}
 .rentTab.active{border-color:var(--accent);color:var(--accent);background:rgba(38,205,203,.08)}
 html[data-theme="light"] .rentTab.active{background:rgba(15,168,166,.08)}
+/* 开屏登录页：未持有 AutoDL 令牌时全屏拦截 */
+#splash{position:fixed;inset:0;z-index:1500;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:var(--bg);padding:32px;text-align:center}
+#splash .brandMark{width:64px;height:64px;border-radius:19px;font-size:22px}
+#splash h1{font-size:18px;margin:0}
+#splash .hint{max-width:320px;margin:0}
+#splashBtns{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:10px;width:100%}
+#splashBtns > button{min-width:200px}
+/* 登录后第二屏：新手/老手选择 */
+#modeMask{position:fixed;inset:0;z-index:1400;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:var(--bg);padding:32px}
+#modeHead{width:min(420px,92vw)}
+#modeHead h2{margin:0 0 6px;font-size:16px;letter-spacing:.02em}
+#modeCards{display:flex;flex-direction:column;gap:12px;width:min(420px,92vw)}
+.modeCard{display:flex;flex-direction:column;gap:4px;width:100%;text-align:left;padding:14px 16px;border-radius:12px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font-family:inherit;font-size:13px;cursor:pointer;box-shadow:none;transform:none;height:auto}
+.modeCard b{font-size:15px}
+.modeCard span{color:var(--dim);font-size:12px;font-weight:400}
+.modeCard.sel{border-color:var(--accent);background:rgba(38,205,203,.08)}
+html[data-theme="light"] .modeCard.sel{background:rgba(15,168,166,.08)}
+.modeCard:active{transform:none}
+@media (hover:hover) and (pointer:fine){
+  .modeCard:hover{border-color:var(--accent);background:var(--panel2);box-shadow:none}
+}
+/* 新手租机引导屏（选新手后紧接的第二流程屏） */
+#nbMask{position:fixed;inset:0;z-index:1400;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:var(--bg);padding:32px}
+#nbHead{width:min(420px,92vw)}
+#nbHead h2{margin:0 0 6px;font-size:16px;letter-spacing:.02em}
+#nbMask label{width:min(420px,92vw);margin:4px 0 0}
+#nbMask select{width:min(420px,92vw)}
+#nbMask .ts-wrapper{width:min(420px,92vw)}
+#nbMask .hint{width:min(420px,92vw);margin:0}
+#nbErr{color:var(--err)}
+#nbBtns{display:flex;flex-direction:column;gap:10px;width:min(420px,92vw);margin-top:8px}
 /* 设置页账号信息行 */
 .acctRow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:12px;color:var(--dim);padding:8px 12px;background:var(--panel2);border-radius:9px;margin-top:8px}
 .acctRow b{color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -265,6 +296,8 @@ html[data-theme="light"] .tabPill{background:rgba(15,168,166,.11);box-shadow:ins
 /* 实例管理页 */
 .instCard{position:relative;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-top:10px;background:var(--panel2)}
 .nonGpuTag{position:absolute;top:-8px;right:12px;background:var(--warn);color:#fff;font-size:10px;font-weight:600;padding:2px 9px;border-radius:99px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.cfgTag{position:absolute;top:-8px;right:12px;background:var(--accent);color:#062b2b;font-size:10px;font-weight:600;padding:2px 9px;border-radius:99px;box-shadow:0 2px 8px rgba(0,0,0,.25);animation:cfgPulse 1.2s ease-in-out infinite}
+@keyframes cfgPulse{0%,100%{opacity:1}50%{opacity:.5}}
 .instHead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .instHead b{font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
 .instNameInput{width:180px;height:30px;font-size:13px;padding:2px 8px;background:var(--panel);border:1px solid var(--accent);border-radius:7px;color:var(--text)}
@@ -315,6 +348,17 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
 </style>
 </head>
 <body>
+
+<div id="splash" style="display:none">
+  <div class="brandMark">H3</div>
+  <h1 data-i18n="title">MiniMax H3 视频生成控制台</h1>
+  <div class="hint" data-i18n="splashTagline">登录 AutoDL 账号后开始使用</div>
+  <div id="splashBtns">
+    <button onclick="openLogin()" data-i18n="login">登录 AutoDL</button>
+    <div class="hint" id="splashHint"></div>
+  </div>
+</div>
+
 <div class="inline" style="justify-content:space-between;align-items:center;margin-bottom:6px">
   <div class="inline" style="gap:12px">
     <div class="brandMark">H3</div>
@@ -469,6 +513,7 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
     <select id="dlInst" style="flex:1;min-width:0"><option value="" data-i18n="pickInst">— 请先获取列表 —</option></select>
     <button class="ghost" onclick="openRent()" data-i18n="rentBtn">租用</button>
     <button class="ghost" onclick="loadInstances()" data-i18n="fetchList">获取列表</button>
+    <button class="ghost" id="dbgCfgBtn" onclick="dbgDeploy()" style="display:none" data-i18n="dbgDeploy">一键配置</button>
   </div>
   <div class="status" id="statusBox" style="margin-top:8px">
     <span><span class="dot off" id="dotInst"></span><span id="instText" data-i18n="unknown">未知</span></span>
@@ -495,6 +540,7 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
     </div>
   </div>
   <div class="hint" id="billLine" style="margin:4px 0 0"></div>
+  <div class="hint" id="newbieTip" style="display:none" data-i18n="newbieTip"></div>
   <div id="advBox" style="display:none">
     <label data-i18n="apiAddr">ComfyUI API 地址</label>
     <input type="text" id="apiBase" placeholder="https://…">
@@ -520,6 +566,11 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
     <div class="acctRow"><span data-i18n="acctUser">用户名</span><b id="acctName">-</b></div>
     <div class="acctRow"><span data-i18n="acctBalance">余额</span><b id="acctWallet">-</b></div>
   </div>
+  <label data-i18n="modeLabel">使用模式</label>
+  <div class="inline">
+    <span class="hint" id="modeVal" style="margin:0">-</span>
+    <button class="ghost" onclick="showModePicker()" data-i18n="modeChange">重新选择</button>
+  </div>
   <label data-i18n="langLabel">语言</label>
   <select id="langSel"><option value="zh">中文</option><option value="en">English</option></select>
   <label data-i18n="themeLabel">主题</label>
@@ -540,7 +591,15 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
       afdian.com/a/Venshell ↗
     </a>
   </div>
-  <div class="hint">v1.74</div>
+  <div id="dbgBox" style="display:none;border:1px dashed var(--border);border-radius:10px;padding:10px 12px;margin-top:10px">
+    <label style="margin-top:0;color:var(--warn)">DEBUG</label>
+    <div class="inline">
+      <button class="ghost" onclick="dbgNewbie()" data-i18n="dbgNewbie">模拟新手</button>
+      <button class="ghost" onclick="dbgClear()" data-i18n="dbgClear">清除数据</button>
+      <button class="ghost" onclick="dbgSplash()" data-i18n="dbgSplash">打开开屏页</button>
+    </div>
+  </div>
+  <div class="hint">v1.92</div>
 </div>
 </div>
 </div>
@@ -568,6 +627,40 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
 <div id="toast"></div>
 
 <div id="cfmMask"><div id="cfmBox"><p id="cfmMsg"></p><div id="cfmBtns"><button id="cfmCancel" data-i18n="cancel">取消</button><button id="cfmOk" data-i18n="ok">确定</button></div></div></div>
+
+<div id="modeMask">
+  <div id="modeHead">
+    <h2 data-i18n="modeTitle">选择使用模式</h2>
+    <div class="hint" data-i18n="modeSub">按使用经验调整界面引导，可随时在设置中更改</div>
+  </div>
+  <div id="modeCards">
+    <button type="button" class="modeCard" data-lv="newbie" onclick="chooseMode('newbie')">
+      <b data-i18n="modeNewbie">新手</b>
+      <span data-i18n="modeNewbieDesc">初次使用 AutoDL，需要更多引导</span>
+    </button>
+    <button type="button" class="modeCard" data-lv="expert" onclick="chooseMode('expert')">
+      <b data-i18n="modeExpert">老手</b>
+      <span data-i18n="modeExpertDesc">熟练使用 ComfyUI / AutoDL，直接上手</span>
+    </button>
+  </div>
+</div>
+
+<div id="nbMask">
+  <div id="nbHead">
+    <h2 data-i18n="nbTitle">租一台新机器</h2>
+    <div class="hint" data-i18n="nbSub">已自动匹配各地区空闲显卡，只需选择显卡型号</div>
+  </div>
+  <label data-i18n="nbGpuLabel">GPU 型号</label>
+  <select id="nbGpu"></select>
+  <div class="hint" id="nbRegionLine"><span data-i18n="nbRegionLabel">地区（自动匹配）</span>：<span id="nbRegion">-</span></div>
+  <div class="hint" id="nbImage" data-i18n="nbImage">镜像：ComfyUI v18 社区镜像（自动选择）</div>
+  <div class="hint" id="nbErr" style="display:none"></div>
+  <div id="nbBtns">
+    <button id="nbOk" onclick="nbRent()" data-i18n="rentConfirm">确认租用</button>
+    <button class="ghost" onclick="openExternal('https://www.autodl.com/recharge')" data-i18n="recharge">充值</button>
+    <button class="ghost" onclick="nbSkip()" data-i18n="nbSkip">跳过，直接进入</button>
+  </div>
+</div>
 
 <div id="rentMask"><div id="rentBox">
   <h3 data-i18n="rentTitle">租用新实例</h3>
@@ -1021,6 +1114,9 @@ zh: {
  powerOn:"开机", powerOff:"关机", timed:"定时关机", untimed:"取消定时", minTitle:"分钟后关机", autoOff:"完成后关机", autoOffDone:"任务全部完成，自动关机…", autoOffDl:"已开始下载，稍后自动关机…",
  apiAddr:"ComfyUI API 地址",
  loginInApp:"请在手机端 App 内使用登录", logged:"已登录", loginFirst:"请先登录", loginExpired:"登录已过期，请重新登录",
+ splashTagline:"登录 AutoDL 账号后开始使用",
+ modeLabel:"使用模式", modeChange:"重新选择", modeTitle:"选择使用模式", modeSub:"按使用经验调整界面引导，可随时在设置中更改", modeNewbie:"新手", modeNewbieDesc:"初次使用 AutoDL，需要更多引导", modeExpert:"老手", modeExpertDesc:"熟练使用 ComfyUI / AutoDL，直接上手", newbieTip:"新手提示：租用实例 → 开机 → 选择实例 → 创作页生成 → 完成后定时关机省成本",
+ nbTitle:"租用新机器", nbSub:"只需选择显卡型号，地区按空闲数量自动匹配，镜像自动使用 ComfyUI v18；创建后自动开机并通过 SSH 部署组件", nbGpuLabel:"GPU 型号", nbRegionLabel:"地区（自动匹配）", nbImage:"镜像：ComfyUI v18 社区镜像（自动选择）", nbLoading:"正在查询各地区空闲显卡…", nbRegionAuto:"{name} · 空闲 {idle} 张 · ¥{p}/时", nbIdleSum:"（空闲 {idle} 张）", nbPriceFrom:" · ¥{p}/时起", nbSkip:"稍后再说", nbOffline:"所选机器当前不可下单，请重试", nbRetry:"请重试或稍后再试", nbDeployStart:"正在等待新实例进入列表…", nbDeployPowerOn:"实例创建成功，正在开机…", nbDeployWaitRun:"开机中，等待实例就绪（约 1–2 分钟）…", nbDeploySsh:"正在通过 SSH 部署实例侧组件（监测/删除端点 + 开机自启）…", nbDeployReboot:"部署完成，正在重启实例使组件生效…", nbDeployVerify:"已重启，等待 ComfyUI 启动并验证 /h3ui/stats 端点…", nbDeployOk:"实例环境就绪：性能监测与云端删除端点已启用", nbDeployFail:"自动部署中断：", nbDeployManual:"（可在实例 SSH 终端按 README 手动执行部署三连）", nbSshNoInfo:"未获取到实例 SSH 信息，已跳过自动部署", nbCfgBadge:"自动配置中…", dbgNewbie:"模拟新手", dbgClear:"清除数据", dbgSplash:"打开开屏页", dbgDeploy:"一键配置",
  pwrCtl:"电源控制",
  fetching:"获取中…", noInst:"暂无实例", fetchFail:"获取失败：", noInstSel:"未选择实例",
  queryFail:"查询失败：", instOff:"实例未开机",
@@ -1031,7 +1127,7 @@ zh: {
  shutting:"关机中…", powerOffFail:"关机失败：", confirmShutdown:"确认关机？",
  tasksWillDrop:"当前有 {n} 个任务，关机将全部丢弃", confirmDropShutdown:"确认中断全部任务并关机？",
  setting:"设置中…", shutdownIn:"{n} 分钟后关机", setFail:"设置失败：", timedCancelled:"已取消定时", cancelFail:"取消失败：",
- noForward:"未从实例数据中自动找到转发地址，请手动填写 ComfyUI API 地址",
+ noForward:"未获取到公网转发地址（已依次尝试：Web 数据 → 转发地址扫描 → SSH 自报，均失败），请手动填写 ComfyUI API 地址", fwdSearching:"正在获取公网转发地址（Web 数据 → 扫描 → SSH）…", modelsMissing:"实例缺少 H3 模型文件（已启动魔搭后台下载，完成后重启实例即可）：", noForwardSsh:"实例无公网转发，已通过 SSH 隧道连接（本机 127.0.0.1 → 实例 ComfyUI 端口）", tunnelFail:"SSH 隧道已建立但本地访问失败（已暂时停用，60 秒后自动重试；若持续失败请反馈机型与系统版本）",
  createSec:"创作", promptSec:"提示词", promptPh:"描述画面、镜头与音频；英文效果最佳，可用 embedding: 风格嵌入",
  play:"播放", histEmpty:"暂无生成记录",
  firstFrame:"首帧图片（可选）", lastFrame:"尾帧图片（可选）", uploadFail:"图片上传失败：", clearImg:"清除已选图片", pickImg:"选择图片",
@@ -1083,6 +1179,9 @@ en: {
  powerOn:"Power on", powerOff:"Power off", timed:"Timed off", untimed:"Cancel timer", timedSet:"Set", minTitle:"minutes from now", autoOff:"Off when done", autoOffDone:"All tasks done, shutting down…", autoOffDl:"Download started, shutting down soon…",
  apiAddr:"ComfyUI API URL",
  loginInApp:"Please use login inside the mobile App", logged:"Logged in", loginFirst:"Please log in first", loginExpired:"Session expired, please log in again",
+ splashTagline:"Sign in to your AutoDL account to start",
+ modeLabel:"Usage mode", modeChange:"Change", modeTitle:"Choose usage mode", modeSub:"Adjusts guidance by experience; change anytime in Settings", modeNewbie:"Beginner", modeNewbieDesc:"First time with AutoDL — extra guidance", modeExpert:"Expert", modeExpertDesc:"Comfortable with ComfyUI / AutoDL — jump right in", newbieTip:"Tip: rent instance → power on → pick instance → generate on Create page → schedule shutdown to save cost",
+ nbTitle:"Rent a new machine", nbSub:"Just pick a GPU type — region is matched automatically by idle count, image is set to ComfyUI v18; after ordering it powers on and deploys the components via SSH", nbGpuLabel:"GPU type", nbRegionLabel:"Region (auto-matched)", nbImage:"Image: ComfyUI v18 community image (auto-selected)", nbLoading:"Checking idle GPUs across regions…", nbRegionAuto:"{name} · {idle} idle · ¥{p}/h", nbIdleSum:" ({idle} idle)", nbPriceFrom:" · from ¥{p}/h", nbSkip:"Later", nbOffline:"The selected machine cannot take orders right now — please retry", nbRetry:"please retry or try again later", nbDeployStart:"Waiting for the new instance to appear…", nbDeployPowerOn:"Instance created — powering on…", nbDeployWaitRun:"Booting, waiting for the instance to be ready (~1–2 min)…", nbDeploySsh:"Deploying instance-side components via SSH (stats/delete endpoints + boot hook)…", nbDeployReboot:"Deployed — rebooting the instance to load them…", nbDeployVerify:"Rebooted — waiting for ComfyUI and verifying /h3ui/stats…", nbDeployOk:"Instance environment ready: monitoring & delete endpoints enabled", nbDeployFail:"Auto-deploy interrupted: ", nbDeployManual:" (you can run the 3 deploy commands manually in the instance SSH terminal per README)", nbSshNoInfo:"No SSH info found — auto-deploy skipped", nbCfgBadge:"Auto-configuring…", dbgNewbie:"Simulate newbie", dbgClear:"Clear data", dbgSplash:"Open splash", dbgDeploy:"One-click deploy",
  pwrCtl:"Power controls",
  fetching:"Fetching…", noInst:"No instances", fetchFail:"Fetch failed: ", noInstSel:"No instance selected",
  queryFail:"Query failed: ", instOff:"Instance is off",
@@ -1093,7 +1192,7 @@ en: {
  shutting:"Shutting down…", powerOffFail:"Power off failed: ", confirmShutdown:"Shut down?",
  tasksWillDrop:"{n} task(s) in progress, they will be dropped", confirmDropShutdown:"Abort all tasks and shut down?",
  setting:"Setting…", shutdownIn:"Shutdown in {n} min", setFail:"Set failed: ", timedCancelled:"Timer cancelled", cancelFail:"Cancel failed: ",
- noForward:"No forward URL found in instance data, please enter the ComfyUI API URL manually",
+ noForward:"No public forward URL found (tried in order: web data → forward-URL scan → SSH self-report, all failed) — please enter the ComfyUI API URL manually", fwdSearching:"Fetching public forward URL (web data → scan → SSH)…", modelsMissing:"H3 model files missing on instance (ModelScope background download started; restart the instance once done): ", noForwardSsh:"No public forward on this instance — connected via SSH tunnel (local 127.0.0.1 → instance ComfyUI port)", tunnelFail:"SSH tunnel established but local access failed (paused, auto-retry in 60s; if it keeps failing please report your device model & Android version)",
  createSec:"Create", promptSec:"Prompt", promptPh:"Describe scene, camera and audio; English works best, supports embedding: style presets",
  play:"Play", histEmpty:"No generations yet",
  firstFrame:"First frame (optional)", lastFrame:"Last frame (optional)", uploadFail:"Image upload failed: ", clearImg:"Clear selected image", pickImg:"Choose image",
@@ -1167,8 +1266,9 @@ function applyI18n(){
     if(its.control_input) its.control_input.placeholder = t("pickInst");
   }
   $("costLive").innerHTML = fmtElapsed(running ? (Date.now()-startT)/1000 : 0);
-  if(loginHintKey) $("loginHint").textContent = t(loginHintKey);
+  if(loginHintKey){ $("loginHint").textContent = t(loginHintKey); const sh = $("splashHint"); if(sh) sh.textContent = t(loginHintKey); }
   renderQueue(); updateDur(); renderBill();
+  applyLevel();
 }
 
 function applyTheme(th){
@@ -1511,16 +1611,50 @@ registerDlAdapter("autodl", {
   }
 });
 let loginHintKey = null;
-function setLoginHint(k){ loginHintKey = k; $("loginHint").textContent = k ? t(k) : ""; }
+function setLoginHint(k){
+  loginHintKey = k;
+  $("loginHint").textContent = k ? t(k) : "";
+  const sh = $("splashHint");
+  if(sh) sh.textContent = k ? t(k) : "";
+}
+function showSplash(){ $("splash").style.display = "flex"; }
+function hideSplash(){ $("splash").style.display = "none"; }
 function openLogin(){
   if(window.H3App){ H3App.openLogin(); return; }
   setLoginHint("loginInApp");
 }
 function applyToken(tk){
   localStorage.setItem("h3_dltoken", tk);
-  setLoginHint("logged");
+  hideSplash();
   loadInstances();
   loadAccount();
+  if(!userLevel()){
+    setLoginHint("");
+    showModePicker(true);
+  }else{
+    setLoginHint("logged");
+    applyLevel();
+  }
+}
+
+/* 新手/老手模式：登录后第二屏选择（设置页可重选），持久记录；影响引导与 ComfyUI 地址展开 */
+let modeOnboard = false;
+function userLevel(){ return localStorage.getItem("h3_level") || ""; }
+function showModePicker(onboard){ modeOnboard = !!onboard; $("modeMask").style.display = "flex"; }
+function hideModePicker(){ $("modeMask").style.display = "none"; }
+function chooseMode(lv){
+  localStorage.setItem("h3_level", lv);
+  hideModePicker();
+  applyLevel();
+  if(lv === "newbie" && modeOnboard){ modeOnboard = false; showNbRent(); }
+}
+function applyLevel(){
+  const lv = userLevel();
+  $("modeVal").textContent = lv === "newbie" ? t("modeNewbie") : lv === "expert" ? t("modeExpert") : "-";
+  $("newbieTip").style.display = lv === "newbie" ? "" : "none";
+  if(lv === "expert") showAdv();
+  const cards = document.querySelectorAll(".modeCard");
+  for(let i = 0; i < cards.length; i++) cards[i].classList.toggle("sel", cards[i].dataset.lv === lv);
 }
 
 let acctName = "", acctBalance = null, acctCoupon = null;
@@ -1548,6 +1682,7 @@ async function loadAccount(){
 }
 function logoutAutoDL(){
   localStorage.removeItem("h3_dltoken");
+  if(window.H3App && window.H3App.clearToken) H3App.clearToken();
   acctName = ""; acctBalance = null; acctCoupon = null;
   instListCache = [];
   renderInstOptions();
@@ -1561,35 +1696,81 @@ function showAdv(){ $("advBox").style.display = ""; }
 
 function fmtElapsed(el){ return t("elapsed") + " <b>"+Math.floor(el/60)+":"+String(Math.floor(el%60)).padStart(2,"0")+"</b>"; }
 
-function findForwardUrl(obj){
-  const s = JSON.stringify(obj);
+// ================= 公网转发地址获取链（v1.91 重写，三级严格按优先级） =================
+// ① Web 数据：AutoDL API 实例数据中的结构化字段（service_6006_domain 等），逐个实测
+// ② 转发地址寻找：detail 接口全量 JSON 深度扫描 *.seetacloud.com（u 前缀独立转发优先），逐个实测
+// ③ SSH 寻找：读实例内 proxy 进程环境变量自报地址（AutoDLService6006URL / AutoDLServiceURL）
+// 任一级拿到实测可用（/system_stats 200）的地址即停；全部失败才提示手动填写。
+// SSH 仅用于读地址与部署端点脚本，不做数据通道（隧道已停用，SSH_TUNNEL_ON=false）。
+
+function fwdNorm(u){ return /:\d+\/?$/.test(u) ? u.replace(/\/$/, "") : u + ":8443"; }
+// ① 结构化字段。注意 service_6006_domain 可能指向 JupyterLab 而非 ComfyUI，必须实测后再采用
+function fwdFromFields(s){
+  const out = [];
   const d = (s.match(/"service_6006_domain":"([^"]+)"/) || [])[1];
-  if(d) return "https://" + d;
+  if(d) out.push(fwdNorm("https://" + d));
+  return out;
+}
+// ② 深度扫描：整包 JSON 里所有 seetacloud 转发地址，u数字- 前缀（ComfyUI 独立转发）优先
+function fwdFromScan(s){
   const all = (s.match(/https?:\/\/[a-zA-Z0-9.-]+\.seetacloud\.com(?::\d+)?/g)) || [];
-  return all.find(u=>/^https:\/\/u\d+-/.test(u)) || all[0] || null;
+  const u = all.filter(x => /^https:\/\/u\d+-/.test(x)).map(fwdNorm);
+  const rest = all.filter(x => !/^https:\/\/u\d+-/.test(x)).map(fwdNorm);
+  return [...new Set(u.concat(rest))];
+}
+// 实测：只有真正应答 ComfyUI /system_stats 的地址才算命中
+async function fwdProbe(url){
+  try{
+    const r = await fetch(url + "/system_stats", {cache: "no-store", signal: AbortSignal.timeout(6000)});
+    return r.ok ? url : null;
+  }catch(e){ return null; }
+}
+async function fwdPick(list){
+  for(const u of [...new Set(list)].filter(Boolean)){ const ok = await fwdProbe(u); if(ok) return ok; }
+  return null;
+}
+// ③ SSH 自报：实例内 AutoDL proxy 进程的环境变量自带本机公网转发地址（权威来源）
+async function fwdFromSsh(uuid){
+  const si = nbSshInfo(uuid);
+  if(!si || !(window.H3App && window.H3App.sshExec)) return null;
+  const r = await sshExec(si.host, si.port, si.pass,
+    "for p in $(pidof proxy); do tr '\\0' '\\n' < /proc/$p/environ 2>/dev/null; done | grep -a ^AutoDLService.*URL=", 25);
+  const urls = String(r.out || "").match(/https:\/\/[a-zA-Z0-9.-]+\.seetacloud\.com:\d+/g) || [];
+  return urls.length ? urls[0] : null;
 }
 
+let autoSetApiBusy = false; // 防止 4s 轮询期间重入（全链最长可达约 40s）
 async function autoSetApi(){
-  if(!$("dlInst").value) return;
+  if(autoSetApiBusy || !$("dlInst").value) return;
   const it = curInst();
   if(it && it.status !== "running") return;
-  let url = it ? findForwardUrl(it) : null;
-  if(!url){
-    try{
-      const d = await dlCall("/api/v1/instance/detail", {instance_uuid: $("dlInst").value});
-      url = findForwardUrl(d);
-    }catch(e){}
-  }
-  if(url){
-    if(!/:\d+$/.test(url)) url += ":8443";
-    $("apiBase").value = url;
-    saveApi();
-    $("pwrHint").textContent = "";
-    connect();
-  }else{
-    $("pwrHint").textContent = t("noForward");
-    showAdv();
-  }
+  autoSetApiBusy = true;
+  $("pwrHint").textContent = t("fwdSearching");
+  try{
+    // Web 数据源：实例卡缓存数据 + detail 接口（两级都查，谁有地址用谁）
+    const datas = [];
+    if(it) datas.push(JSON.stringify(it));
+    try{ datas.push(JSON.stringify(await dlCall("/api/v1/instance/detail", {instance_uuid: $("dlInst").value}))); }catch(e){}
+
+    let url = await fwdPick(datas.flatMap(fwdFromFields));      // ① Web 数据结构化字段
+    if(!url) url = await fwdPick(datas.flatMap(fwdFromScan));   // ② 转发地址深度扫描
+    if(!url){
+      const su = await fwdFromSsh($("dlInst").value);           // ③ SSH 实例自报
+      if(su) url = (await fwdProbe(su)) || su;                  // 实测通过采用；ComfyUI 启动中暂未响应也先填入，由连接层重试
+    }
+    if(url){
+      $("apiBase").value = url;
+      saveApi();
+      $("pwrHint").textContent = "";
+      sshTunnelCloseCur();
+      connect();
+    }else{
+      // 三级链全失败：清掉残留的本地隧道地址（隧道已停用，必然失效），提示手动填写
+      if(/^http:\/\/127\.0\.0\.1/.test($("apiBase").value)){ $("apiBase").value = ""; saveApi(); }
+      $("pwrHint").textContent = t("noForward");
+      showAdv();
+    }
+  }finally{ autoSetApiBusy = false; }
 }
 
 function cleanToken(){ return (localStorage.getItem("h3_dltoken")||"").trim().replace(/^['"]+/, "").replace(/['"]+$/, "").trim(); }
@@ -1660,6 +1841,17 @@ function rentShowSel(sel, show){
 function rentReset(sel, disabled, loading){
   rentFill(sel, [{value:"", text: loading ? t("rentLoading") : t("rentPick")}], "", disabled);
 }
+async function rentFetchRegions(){
+  const d = await dlGet("/api/v1/region/list");
+  const seen = {};
+  (d || []).forEach(r => {
+    if(r.visible !== "all" || r.used_for !== "all") return;
+    if(/(wave-A|shenzhen-A|suqian-C|neimeng-B|nanjing-A|quanzhou-A|east-A)/.test(r.region_sign)) return;
+    if(seen[r.data_center]){ seen[r.data_center].signs.push(r.region_sign); return; }
+    seen[r.data_center] = {dc: r.data_center, name: r.region_name || r.data_center, signs: [r.region_sign]};
+  });
+  return Object.values(seen);
+}
 async function openRent(){
   if(!dlReady()){ setLoginHint("loginFirst"); go("settings"); return; }
   $("rentMask").style.display = "flex";
@@ -1678,15 +1870,7 @@ async function openRent(){
   $("rentOk").disabled = false;
   rentRegions = [];
   try{
-    const d = await dlGet("/api/v1/region/list");
-    const seen = {};
-    (d || []).forEach(r => {
-      if(r.visible !== "all" || r.used_for !== "all") return;
-      if(/(wave-A|shenzhen-A|suqian-C|neimeng-B|nanjing-A|quanzhou-A|east-A)/.test(r.region_sign)) return;
-      if(seen[r.data_center]){ seen[r.data_center].signs.push(r.region_sign); return; }
-      seen[r.data_center] = {dc: r.data_center, name: r.region_name || r.data_center, signs: [r.region_sign]};
-    });
-    rentRegions = Object.values(seen);
+    rentRegions = await rentFetchRegions();
     rentFill($("rentRegion"), [{value:"", text:t("rentPick")}].concat(rentRegions.map(rg => ({value: rg.dc, text: rg.name}))), "", false);
   }catch(e){ rentShowErr(t("rentFail") + e.message); }
 }
@@ -1906,6 +2090,344 @@ $("rentNum").addEventListener("change", () => { rentMachPreview(); });
 $("rentCancel").addEventListener("click", closeRent);
 $("rentOk").addEventListener("click", rentConfirm);
 
+// ---- 新手租机引导屏：仅显卡可选，地区按空闲数自动匹配，镜像锁 ComfyUI v18 ----
+let nbGpuMap = {}, nbBest = null, nbDeployingUuid = "";
+function nbErr(m){
+  const e = $("nbErr");
+  if(m){ e.textContent = m; e.style.display = "block"; } else e.style.display = "none";
+}
+function nbSkip(){ $("nbMask").style.display = "none"; }
+function nbEnsureTS(){
+  const el = $("nbGpu");
+  if(el.tomselect || typeof TomSelect === "undefined") return;
+  try{
+    const ts = new TomSelect("#nbGpu", {wrapperClass:"ts-wrapper res-w", maxOptions:300});
+    ts.on("change", nbSyncRegion);
+  }catch(e){}
+}
+function nbMachineQuery(nm, signs){
+  return {charge_type:"payg", region_sign:"", gpu_type_name:[nm], machine_tag_name:[], gpu_idle_num:1, mount_net_disk:false, instance_disk_size_order:"", date_range:"", date_from:"", date_to:"", page_index:1, page_size:90, pay_price_order:"", gpu_idle_type:"", default_order:true, region_sign_list: signs, cpu_arch:[], chip_corp:[]};
+}
+async function showNbRent(){
+  $("nbMask").style.display = "flex";
+  nbEnsureTS();
+  nbErr("");
+  $("nbRegion").textContent = t("nbLoading");
+  $("nbOk").disabled = true;
+  nbGpuMap = {}; nbBest = null;
+  rentFill($("nbGpu"), [{value:"", text:t("nbLoading")}], "", true);
+  try{
+    const regs = await rentFetchRegions();
+    const lists = await Promise.all(regs.map(rg => dlCall("/api/v1/machine/region/gpu_type", {region_sign_list: rg.signs}).catch(() => null)));
+    lists.forEach((d, i) => {
+      (d || []).forEach(o => Object.keys(o).forEach(name => {
+        const info = o[name] || {};
+        const idle = parseInt(info.idle_gpu_num) || 0;
+        if(idle <= 0) return;
+        const e = nbGpuMap[name] || (nbGpuMap[name] = {info, regions: []});
+        e.regions.push({name: regs[i].name, signs: regs[i].signs, idle});
+      }));
+    });
+    const names = Object.keys(nbGpuMap).sort();
+    // 每个型号在其自动匹配区查一次机器，取最低价作为标价
+    await Promise.all(names.map(nm => {
+      const e = nbGpuMap[nm];
+      e.best = e.regions.slice().sort((a, b) => b.idle - a.idle)[0];
+      return dlCall("/api/v1/user/machine/list", nbMachineQuery(nm, e.best.signs)).then(d => {
+        const ms = ((d && d.list) || []).filter(m => (parseInt(m.gpu_idle_num) || 0) > 0);
+        e.price = ms.length ? Math.min.apply(null, ms.map(m => m.payg_price || 0)) : null;
+      }).catch(() => { e.price = null; });
+    }));
+    if(!names.length){ rentFill($("nbGpu"), [], "", true); nbErr(t("rentNoGpu")); return; }
+    const items = names.map(nm => {
+      const e = nbGpuMap[nm];
+      const tot = e.regions.reduce((s, r) => s + r.idle, 0);
+      return {value: nm, text: nm + t("nbIdleSum", {idle: tot}) + (e.price != null ? t("nbPriceFrom", {p: (e.price / 1000).toFixed(2)}) : "")};
+    });
+    // 按最低价升序排列（查不到价的沉底，同价按名称），最便宜的一项排最上并自动选中
+    items.sort((a, b) => {
+      const pa = nbGpuMap[a.value].price, pb = nbGpuMap[b.value].price;
+      if(pa == null && pb == null) return a.value.localeCompare(b.value);
+      if(pa == null) return 1;
+      if(pb == null) return -1;
+      return pa - pb;
+    });
+    rentFill($("nbGpu"), items, items.length ? items[0].value : "", false);
+    nbSyncRegion();
+    $("nbOk").disabled = false;
+  }catch(e){ nbErr(t("rentFail") + e.message); }
+}
+function nbSyncRegion(){
+  const e = nbGpuMap[rentGetVal($("nbGpu"))];
+  if(!e || !e.best){ nbBest = null; $("nbRegion").textContent = "-"; return; }
+  nbBest = e.best;
+  $("nbRegion").textContent = t("nbRegionAuto", {name: nbBest.name, idle: nbBest.idle, p: e.price != null ? (e.price / 1000).toFixed(2) : "-"});
+}
+async function nbRent(){
+  const nm = $("nbGpu").value, reg = nbBest;
+  if(!nm || !reg){ nbErr(t("rentNeedGpu")); return; }
+  const btn = $("nbOk");
+  btn.disabled = true; btn.textContent = t("rentCreating"); nbErr("");
+  try{
+    const info = (nbGpuMap[nm] || {}).info || {};
+    const chip = info.chip_corp && info.chip_corp !== "cpu" ? [info.chip_corp] : [];
+    const arch = info.cpu_arch ? [info.cpu_arch] : [];
+    const res = await Promise.all([
+      dlCall("/api/v1/user/machine/list", nbMachineQuery(nm, reg.signs)),
+      dlCall("/api/v1/image/codewithgpu/list", Object.assign({reproduction_uuid: RENT_CG_PROJECT}, {chip_corp: chip, cpu_arch: arch}))
+    ]);
+    const machs = (((res[0] && res[0].list) || []).filter(m => (parseInt(m.gpu_idle_num) || 0) > 0)).sort((a, b) => (a.payg_price || 0) - (b.payg_price || 0));
+    if(!machs.length){ nbErr(t("rentNoMachine")); return; }
+    const entry = (res[1] || []).find(img => img.image_id === RENT_CG_IMAGE_ID);
+    const ver = entry && (entry.version_info || []).find(v => String(v.version) === RENT_CG_VERSION);
+    if(!entry || !ver){ nbErr(t("rentCgNone")); return; }
+    const mach = machs[0];
+    const chk = await dlCall("/api/v1/machine/check_machine_online", {machine_id: mach.machine_id});
+    if(chk === false){ nbErr(t("nbOffline")); return; }
+    const body = {
+      instance_info: {
+        machine_id: mach.machine_id, charge_type: "payg", req_gpu_amount: 1,
+        base_image_uuid: "", private_image_uuid: "",
+        reproduction_uuid: entry.uuid + ":v" + ver.version, reproduction_id: entry.image_id,
+        cg_application_uuid: "", cg_application_info: {image_name:"", current_version_id:0, current_version:"", image_id:0},
+        instance_name: "", expand_data_disk: 0
+      },
+      price_info: {coupon_id_list:[], machine_id: mach.machine_id, charge_type: "payg", duration: 1, num: 1, expand_data_disk: 0}
+    };
+    const r = await fetch(dlv().base + "/api/v1/order/instance/create/payg", {
+      method: "POST", headers: dlHeaders(),
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(30000)
+    });
+    const j = await r.json();
+    if(j.code === "Success"){
+      nbSkip();
+      await loadInstances();
+      go("inst");
+      $("pwrHint").textContent = t("rentOk");
+      nbDeployFlow(String((j.data && (j.data.instance_uuid || j.data.uuid)) || ""));
+    }else if(j.code === "MachineGpuNumUpdateFailed"){
+      nbErr(t("rentFail") + (j.msg || "") + "，" + t("nbRetry"));
+    }else if(j.code === "InsufficientBalance"){
+      nbErr(t("rentNoBalance"));
+    }else{
+      nbErr(t("rentFail") + (j.msg || j.code || ("HTTP " + r.status)));
+    }
+  }catch(e){ nbErr(t("rentFail") + e.message); }
+  btn.disabled = false; btn.textContent = t("rentConfirm");
+}
+
+// ---- 新手流程：创建后自动部署实例侧组件（SSH 拉取 h3ui_api.py / 启动脚本 / 开机自启，重启后验证） ----
+const NB_RAW = "https://raw.githubusercontent.com/NukumizuKazuhiko/h3-console/main";
+function nbWait(ms){ return new Promise(r => setTimeout(r, ms)); }
+// 原生桥回调：MainActivity.sshExec 完成后 evaluateJavascript 调用
+window.__sshDone = function(id, code, out){
+  const f = window.__sshMap && window.__sshMap[id];
+  if(f){ delete window.__sshMap[id]; f({code: code, out: out}); }
+};
+function sshExec(host, port, pass, cmd, tmoSec){
+  return new Promise(resolve => {
+    if(!(window.H3App && window.H3App.sshExec)) return resolve({code: -1, out: "no native ssh bridge"});
+    window.__sshMap = window.__sshMap || {};
+    const id = "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    const tmo = setTimeout(() => { if(window.__sshMap[id]){ delete window.__sshMap[id]; resolve({code: -1, out: "timeout"}); } }, (tmoSec || 60) * 1000);
+    window.__sshMap[id] = r => { clearTimeout(tmo); resolve(r); };
+    window.H3App.sshExec(id, host, port, "root", pass, cmd);
+  });
+}
+function nbSshInfo(uuid){
+  const it = instListCache.find(i => i.uuid === uuid) || null;
+  if(!it || !it.root_password) return null;
+  const m = String(it.ssh_command || "").match(/-p\s+(\d+)\s+root@(\S+)/);
+  return m ? {host: m[2], port: parseInt(m[1]) || 22, pass: it.root_password} : null;
+}
+async function nbDeployFlow(uuid){
+  // 部署期间在对应实例卡上显示「自动配置中」角标，结束（成功/失败/跳过）统一摘除
+  try{
+    await nbDeployRun(uuid);
+  }finally{
+    nbDeployingUuid = "";
+    renderInstCards();
+  }
+}
+
+// ---- SSH 隧道：无公网转发（service_6006_domain）地区经本地端口转发访问 ComfyUI ----
+// v1.88：公网转发地址可实测可用后，SSH 隧道路径暂时停用（不调用）；需要时改回 true 即可恢复
+const SSH_TUNNEL_ON = false;
+let sshTunnelCur = null;   // {id, url, uuid}
+let sshTunnelBusy = false; // 防止轮询期间重复建隧
+let sshTunnelFailAt = 0;   // 健康检查失败后的冷却（60s 内不再尝试）
+let sshTunnelLastError = ""; // 最近一次健康检查失败的 fetch 错误（用于提示行排查）
+window.__tunnelDone = function(id, res){
+  const f = window.__tunnelMap && window.__tunnelMap[id];
+  if(f){ delete window.__tunnelMap[id]; f(res); }
+};
+function sshTunnelReq(host, port, pass, remote){
+  return new Promise(resolve => {
+    if(!(window.H3App && window.H3App.sshTunnelOpen)) return resolve(null);
+    window.__tunnelMap = window.__tunnelMap || {};
+    const id = "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    const tmo = setTimeout(() => { if(window.__tunnelMap[id]){ delete window.__tunnelMap[id]; resolve(null); } }, 40000);
+    window.__tunnelMap[id] = res => { clearTimeout(tmo); resolve(res ? {id: id, port: res} : null); };
+    window.H3App.sshTunnelOpen(id, host, port, "root", pass, remote);
+  });
+}
+function sshTunnelCloseCur(){
+  if(sshTunnelCur && window.H3App && window.H3App.sshTunnelClose) window.H3App.sshTunnelClose(sshTunnelCur.id);
+  sshTunnelCur = null;
+}
+async function sshTunnelApi(uuid){
+  if(!SSH_TUNNEL_ON || sshTunnelBusy || Date.now() - sshTunnelFailAt < 60000) return null;
+  if(sshTunnelCur && sshTunnelCur.uuid !== uuid) sshTunnelCloseCur();
+  if(sshTunnelCur) return sshTunnelCur.url;
+  const it = instListCache.find(i => i.uuid === uuid);
+  if(!it || !it.root_password) return null;
+  const m = String(it.ssh_command || "").match(/-p\s+(\d+)\s+root@(\S+)/);
+  if(!m) return null;
+  sshTunnelBusy = true;
+  try{
+    // 实例侧探测 ComfyUI 真实端口：6006 可能被启动器/平台代理占用（对 /system_stats 返回 404），
+    // 逐候选端口 curl 本机 /system_stats，哪个返回 200 就转发哪个；探测失败回落 6006
+    let remote = 6006;
+    const si = nbSshInfo(uuid);
+    if(si){
+      const pr = await sshExec(si.host, si.port, si.pass,
+        "for p in 6006 8188; do echo $p:$(curl -s -m 4 -o /dev/null -w %{http_code} http://127.0.0.1:$p/system_stats); done", 25);
+      const hit = String(pr.out || "").match(/(6006|8188):200/);
+      if(hit) remote = parseInt(hit[1]);
+    }
+    const r = await sshTunnelReq(m[2], parseInt(m[1]) || 22, it.root_password, remote);
+    if(!r) return null;
+    const url = "http://127.0.0.1:" + r.port;
+    // 隧道通不通以页面侧真实 fetch 为准（WebView 拦截器已代答 PNA 预检）
+    let ok = false, lastErr = "";
+    for(let i = 0; i < 3 && !ok; i++){
+      try{
+        const resp = await fetch(url + "/system_stats", {cache: "no-store", signal: AbortSignal.timeout(8000)});
+        if(resp.ok) ok = true; else lastErr = "HTTP " + resp.status;
+      }catch(e){ lastErr = e && e.message ? e.message : String(e); }
+      if(!ok) await nbWait(1500);
+    }
+    if(!ok){
+      // 通道建起但页面侧访问不了：断开会话并冷却，避免轮询反复重连
+      sshTunnelLastError = lastErr;
+      if(window.H3App && window.H3App.sshTunnelClose) window.H3App.sshTunnelClose(r.id);
+      sshTunnelFailAt = Date.now();
+      return "fail";
+    }
+    sshTunnelCur = {id: r.id, url: url, uuid: uuid};
+    return sshTunnelCur.url;
+  }finally{ sshTunnelBusy = false; }
+}
+async function nbDeployRun(uuid){
+  const hint = m => { $("pwrHint").textContent = m; };
+  const refresh = d => { instListCache = d.list || []; renderInstOptions(); renderInstCards(); };
+  try{
+    hint(t("nbDeployStart"));
+    // 1) 等新实例进入列表并选中（下单接口若返回 uuid 则精确匹配，否则取列表第一个）
+    let inst = null;
+    for(let i = 0; i < 15 && !inst; i++){
+      await nbWait(4000);
+      try{
+        const d = await dlCall("/api/v1/instance");
+        refresh(d);
+        inst = (uuid && instListCache.find(x => x.uuid === uuid)) || instListCache[0] || null;
+      }catch(e){}
+    }
+    if(!inst){ hint(t("nbDeployFail") + t("nbDeployManual")); return; }
+    setSelectValue($("dlInst"), inst.uuid);
+    localStorage.setItem("h3_inst", inst.uuid);
+    nbDeployingUuid = inst.uuid;
+    renderInstCards();
+    // 2) 开机并等 running（最长 ~4 分钟）
+    if(inst.status !== "running"){
+      hint(t("nbDeployPowerOn"));
+      try{ await dlCall("/api/v1/instance/power_on", {instance_uuid: inst.uuid}); }catch(e){}
+    }
+    hint(t("nbDeployWaitRun"));
+    let on = false;
+    for(let i = 0; i < 60; i++){
+      await nbWait(4000);
+      try{
+        const d = await dlCall("/api/v1/instance");
+        refresh(d);
+        inst = instListCache.find(x => x.uuid === inst.uuid) || inst;
+        if(inst && inst.status === "running"){ on = true; break; }
+      }catch(e){}
+    }
+    if(!on){ hint(t("nbDeployFail") + t("nbDeployManual")); return; }
+    // 3) 等 SSH 可达（实例列表此时应带 ssh_command / root_password）
+    let si = null;
+    for(let i = 0; i < 15 && !si; i++){
+      si = nbSshInfo(inst.uuid);
+      if(si) break;
+      await nbWait(4000);
+      try{ const d = await dlCall("/api/v1/instance"); refresh(d); inst = instListCache.find(x => x.uuid === inst.uuid) || inst; }catch(e){}
+    }
+    if(!si){ showToast(t("nbSshNoInfo")); return; }
+    let sshOk = false;
+    for(let i = 0; i < 12 && !sshOk; i++){
+      const r = await sshExec(si.host, si.port, si.pass, "echo ok", 30);
+      if(r.code === 0 && r.out.indexOf("ok") >= 0) sshOk = true;
+      else await nbWait(4000);
+    }
+    if(!sshOk){ hint(t("nbDeployFail") + "ssh " + t("nbDeployManual")); return; }
+    // 4) 部署三连（GitHub 不通先走学术加速）
+    hint(t("nbDeploySsh"));
+    const pre = "source /etc/network_turbo >/dev/null 2>&1; ";
+    const steps = [
+      [pre + "mkdir -p /root/autodl-tmp/ComfyUI/custom_nodes && curl -fsSL -m 60 " + NB_RAW + "/h3ui_api.py -o /root/autodl-tmp/ComfyUI/custom_nodes/h3ui_api.py && echo DEPLOY_OK1", "DEPLOY_OK1"],
+      [pre + "curl -fsSL -m 60 " + NB_RAW + "/boot/start_h3.sh -o /root/autodl-tmp/ComfyUI/start_h3.sh && chmod +x /root/autodl-tmp/ComfyUI/start_h3.sh && echo DEPLOY_OK2", "DEPLOY_OK2"],
+      [pre + "touch /etc/autodl.sh && (grep -q 'H3 Console' /etc/autodl.sh || curl -fsSL -m 60 " + NB_RAW + "/boot/autodl_boot.sh >> /etc/autodl.sh) && echo DEPLOY_OK3", "DEPLOY_OK3"]
+    ];
+    for(const st of steps){
+      const r = await sshExec(si.host, si.port, si.pass, st[0], 90);
+      if(r.code !== 0 || r.out.indexOf(st[1]) < 0){
+        hint(t("nbDeployFail") + (r.out || ("exit " + r.code)).trim().slice(-160) + " " + t("nbDeployManual"));
+        return;
+      }
+    }
+    // 5) 重启实例使 custom_nodes 端点加载（镜像自启的 ComfyUI 也会在启动时加载 custom_nodes）
+    hint(t("nbDeployReboot"));
+    try{ await dlCall("/api/v1/instance/power_off", {instance_uuid: inst.uuid}); }catch(e){}
+    let off = false;
+    for(let i = 0; i < 40 && !off; i++){
+      await nbWait(4000);
+      try{
+        const d = await dlCall("/api/v1/instance");
+        refresh(d);
+        const cur = instListCache.find(x => x.uuid === inst.uuid);
+        if(cur && (cur.status === "shutdown" || cur.status === "no_charge")) off = true;
+      }catch(e){}
+    }
+    try{ await dlCall("/api/v1/instance/power_on", {instance_uuid: inst.uuid}); }catch(e){}
+    on = false;
+    for(let i = 0; i < 60 && !on; i++){
+      await nbWait(4000);
+      try{
+        const d = await dlCall("/api/v1/instance");
+        refresh(d);
+        const cur = instListCache.find(x => x.uuid === inst.uuid);
+        if(cur && cur.status === "running") on = true;
+      }catch(e){}
+    }
+    // 6) 验证：SSH 内 curl 本机 /h3ui/stats，返回 JSON 即端点已加载
+    hint(t("nbDeployVerify"));
+    let okStat = false;
+    for(let i = 0; i < 45 && !okStat; i++){
+      await nbWait(4000);
+      const r = await sshExec(si.host, si.port, si.pass, "for p in 6006 8188; do o=$(curl -sf -m 5 http://127.0.0.1:$p/h3ui/stats) && { echo $o; break; }; done", 30);
+      if(r.code === 0 && r.out.indexOf("{") >= 0) okStat = true;
+    }
+    if(okStat){
+      hint(t("nbDeployOk"));
+      showToast(t("nbDeployOk"));
+    }else{
+      hint(t("nbDeployFail") + "/h3ui/stats " + t("nbDeployManual"));
+    }
+  }catch(e){ hint(t("nbDeployFail") + e.message); }
+}
+
 let instListCache = [];
 let instPrice = 0, instBootAt = null;
 
@@ -1941,7 +2463,13 @@ async function pollInstStatus(){
         instPrice = (parseFloat(it.payg_price)||0)/1000;
         instBootAt = on ? new Date(it.status_at).getTime() || null : null;
         renderBill();
-        if(on && (lastInstOn === false || !$("apiBase").value.trim())) autoSetApi();
+        // 残留的 127.0.0.1 隧道地址处理：隧道开启时端口失效即重建；隧道停用（v1.88+）
+        // 后一律视为陈旧，4 秒轮询内自动换成实测可用的公网转发地址
+        const localApi = $("apiBase").value.indexOf("http://127.0.0.1") === 0;
+        const staleTunnel = SSH_TUNNEL_ON
+          ? localApi && (!sshTunnelCur || sshTunnelCur.url !== $("apiBase").value) && Date.now() - sshTunnelFailAt > 60000
+          : localApi;
+        if(on && (lastInstOn === false || !$("apiBase").value.trim() || staleTunnel)) autoSetApi();
         lastInstOn = on;
         $("dotInst").className = "dot " + (on ? "on" : "off");
         $("pwrOnBtn").disabled = on;
@@ -1950,6 +2478,7 @@ async function pollInstStatus(){
           const ph = $("pwrHint").textContent;
           if(ph===t("shutting") || ph===t("autoOffDone") || ph===t("autoOffDl")) $("pwrHint").textContent = "";
           comfyOnline = false;
+          sshTunnelCloseCur();
           $("dotConn").className = "dot off";
           $("connText").textContent = t("instOff");
           clearInterval(costTimer);
@@ -2046,7 +2575,7 @@ function instCardEl(it){
   const nameHtml = editing
     ? '<input type="text" id="rnInput-' + u + '" class="instNameInput" data-uuid="' + u + '" data-old="' + esc(it.name || "") + '" value="' + esc(it.name || "") + '" maxlength="32" onblur="instRenameBlur(this)" onkeydown="instRenameKey(event, this)">'
     : instNameTag(it);
-  let body = nameHtml + (nonGpuActive ? '<span class="nonGpuTag">' + t("instNonGpuBadge") + '</span>' : '') + '<span class="instRegion">' + esc(region) + '</span></div>' + '<div class="instMeta">' + meta + '</div>';
+  let body = nameHtml + (nbDeployingUuid === it.uuid ? '<span class="cfgTag">' + t("nbCfgBadge") + '</span>' : '') + (nonGpuActive ? '<span class="nonGpuTag">' + t("instNonGpuBadge") + '</span>' : '') + '<span class="instRegion">' + esc(region) + '</span></div>' + '<div class="instMeta">' + meta + '</div>';
   if(it.ssh_command) body += '<div class="instSsh">'
     + '<span class="copyable" data-v="' + esc(it.ssh_command) + '" onclick="copyVal(this)" title="' + t("clickCopy") + '">ssh ***</span>'
     + (it.root_password ? ' · ' + t("instPwd") + ' <span class="copyable" data-v="' + esc(it.root_password) + '" onclick="copyVal(this)" title="' + t("clickCopy") + '">***</span>' : '')
@@ -2398,31 +2927,6 @@ async function uploadImg(file){
   return j.subfolder ? j.subfolder + "/" + j.name : j.name;
 }
 
-function buildWorkflow(){
-  const [w,h] = $("resSel").value.split("x");
-  const s = +$("dur").value;
-  let frames = Math.max(5, Math.round(s*24)); frames += (5 - (frames%17))%17;
-  const turbo = $("turbo").checked;
-  const modelSrc = turbo ? ["2",0] : ["1",0];
-  return {
-    "1": {class_type:"UNETLoader", inputs:{unet_name:"minimax_h3_fl2va_pruned_int8_convrot.safetensors", weight_dtype:"default"}},
-    "2": {class_type:"LoraLoaderModelOnly", inputs:{lora_name:"minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors", strength_model:+$("loraStrength").value||1.0, model:["1",0]}},
-    "3": {class_type:"CLIPLoader", inputs:{clip_name:"qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors", type:"minimax", device:"default"}},
-    "4": {class_type:"VAELoader", inputs:{vae_name:"minimax_h3_video_vae_fp16.safetensors"}},
-    "5": {class_type:"VAELoader", inputs:{vae_name:"minimax_h3_audio_vae_fp32.safetensors"}},
-    "6": {class_type:"MiniMaxH3ImageToVideo", inputs:{clip:["3",0], vae:["4",0], prompt:$("prompt").value, width:+w, height:+h, length:frames}},
-    "7": {class_type:"RandomNoise", inputs:{noise_seed:+$("seed").value||0}},
-    "8": {class_type:"KSamplerSelect", inputs:{sampler_name:"res_multistep"}},
-    "9": {class_type:"BasicScheduler", inputs:{scheduler:"simple", steps: turbo?8:20, denoise:1.0, model:modelSrc}},
-    "10": {class_type:"BasicGuider", inputs:{model:modelSrc, conditioning:["6",0]}},
-    "11": {class_type:"SamplerCustomAdvanced", inputs:{noise:["7",0], guider:["10",0], sampler:["8",0], sigmas:["9",0], latent_image:["6",1]}},
-    "12": {class_type:"VAEDecode", inputs:{samples:["11",0], vae:["4",0]}},
-    "13": {class_type:"VAEDecodeAudio", inputs:{samples:["11",0], vae:["5",0]}},
-    "14": {class_type:"CreateVideo", inputs:{images:["12",0], audio:["13",0], fps:24}},
-    "15": {class_type:"SaveVideo", inputs:{video:["14",0], filename_prefix:"video/H3_t2v", format:"auto", codec:"auto"}}
-  };
-}
-
 async function waitComfyReady(){
   for(let i=0;i<60;i++){
     try{
@@ -2467,37 +2971,54 @@ async function generate(){
   $("genBtn").disabled = true; $("genBtn").textContent = t("submitting");
   try{
     if(!comfyOnline) await powerOnAndWait();
-    const wf = buildWorkflow();
+    // v1.92：工作流图固化在实例侧（/h3ui/v1/video_generation），App 只传业务参数，
+    // 彻底隔离 ComfyUI 版本/节点/模型文件差异；返回 task_id 即 prompt_id，
+    // 后续 WS 进度与 /history 轮询逻辑完全不变
+    const [w,h] = $("resSel").value.split("x");
+    const s = +$("dur").value;
+    let frames = Math.max(5, Math.round(s*24)); frames += (5 - (frames%17))%17;
+    const body = {
+      prompt: $("prompt").value,
+      width: +w, height: +h, length: frames,
+      seed: +$("seed").value||0,
+      turbo: $("turbo").checked,
+      strength: +$("loraStrength").value||1.0,
+      client_id: clientId
+    };
     const ff = $("ffFile").files[0], lf = $("lfFile").files[0];
-    if(ff){ wf["6"].inputs.first_frame = ["16",0]; wf["16"] = {class_type:"LoadImage", inputs:{image: await uploadImg(ff)}}; }
-    if(lf){ wf["6"].inputs.last_frame = ["17",0]; wf["17"] = {class_type:"LoadImage", inputs:{image: await uploadImg(lf)}}; }
+    if(ff) body.first_frame = await uploadImg(ff);
+    if(lf) body.last_frame = await uploadImg(lf);
     let j = null, lastErr = null;
     for(let i=0;i<4;i++){
       try{
-        const r = await fetch(api("/prompt"), {
+        const r = await fetch(api("/h3ui/v1/video_generation"), {
           method:"POST", headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({prompt: wf, client_id: clientId})
+          body: JSON.stringify(body)
         });
-        if(!r.ok) throw new Error("HTTP " + r.status);
-        j = await r.json();
-        break;
-      }catch(e){ lastErr = e; await new Promise(res=>setTimeout(res,5000)); }
+        const d = await r.json().catch(()=>null);
+        if(d && d.base_resp && d.base_resp.status_code !== 0){
+          const msg = (d.base_resp.status_code === 2013 ? t("modelsMissing") : "") + (d.base_resp.status_msg||"");
+          throw Object.assign(new Error(msg), {fatal:true});
+        }
+        if(!d || !d.task_id) throw new Error("HTTP " + r.status);
+        j = d; break;
+      }catch(e){
+        lastErr = e;
+        if(e.fatal) break;
+        await new Promise(res=>setTimeout(res,5000));
+      }
     }
-    if(!j) throw new Error(t("submitFail") + String((lastErr && lastErr.message) || lastErr).slice(0,300));
-    if(j.node_errors && Object.keys(j.node_errors).length){
-      throw new Error(t("nodeErr") + JSON.stringify(j.node_errors, null, 2));
-    }
-    if(!j.prompt_id) throw new Error(t("submitFail") + JSON.stringify(j).slice(0,500));
+    if(!j || !j.task_id) throw new Error(t("submitFail") + String((lastErr && lastErr.message) || lastErr).slice(0,300));
     const label = $("prompt").value.trim().replace(/\s+/g," ").slice(0,24);
     if(running){
-      taskQueue.push({pid: j.prompt_id, label}); saveActive();
+      taskQueue.push({pid: j.task_id, label}); saveActive();
       $("prompt").value = "";
       $("genBtn").disabled = false; $("genBtn").textContent = t("addQueue");
       $("nodeLine").textContent = t("queuedCount", {n: taskQueue.length+1});
       renderQueue();
     }else{
       curLabel = label;
-      startRun(j.prompt_id);
+      startRun(j.task_id);
     }
   }catch(e){
     $("errBox").textContent = String(e.message||e); $("errBox").style.display = "block";
@@ -2755,12 +3276,54 @@ document.addEventListener("contextmenu", e => {
 const instPanelEl = document.querySelector("#pageInstance .panel");
 if(instPanelEl && window.ResizeObserver) new ResizeObserver(syncInstScroll).observe(instPanelEl);
 applyI18n();
+
+// ---- DEBUG 面板（仅 debug 签名的 APK 显示；release 的 FLAG_DEBUGGABLE 为 0 自动隐藏） ----
+function isDbg(){
+  try{ return !!(window.H3App && window.H3App.isDebug && window.H3App.isDebug()); }catch(e){ return false; }
+}
+function dbgNewbie(){
+  // 模拟新手：清除使用模式记录，重载后重放 模式选择屏 → 新手租机引导（保留登录态）
+  localStorage.removeItem("h3_level");
+  location.reload();
+}
+function dbgClear(){
+  // 一键清除数据：回到首次安装状态（开屏登录 → 引导全流程）
+  localStorage.clear();
+  location.reload();
+}
+function dbgSplash(){
+  showSplash();
+  const sb = $("splashBtns");
+  if(sb && !sb.querySelector(".dbgClose")){
+    const b = document.createElement("button");
+    b.className = "ghost dbgClose";
+    b.textContent = "关闭开屏页";
+    b.onclick = hideSplash;
+    sb.appendChild(b);
+  }
+}
+function dbgDeploy(){
+  // 一键配置：对当前选中实例手动触发自动部署流程（开机 → SSH 部署三连 → 重启 → 验证）
+  const u = $("dlInst").value;
+  if(!u){ showToast(t("pickInst")); return; }
+  localStorage.setItem("h3_inst", u);
+  nbDeployFlow(u);
+}
+if(isDbg()){
+  $("dbgBox").style.display = "block";
+  $("dbgCfgBtn").style.display = "";
+}
+
 connect();
 pollStatus();
 restoreOnLoad();
 pollInstStatus();
 go("create");
 if(dlReady()){ setLoginHint("logged"); loadInstances(); loadAccount(); }
+else if(!localStorage.getItem("h3_splash_seen")) showSplash();
+localStorage.setItem("h3_splash_seen", "1");
+applyLevel();
+if(dlReady() && !userLevel()) showModePicker(true);
 </script>
 </body>
 </html>

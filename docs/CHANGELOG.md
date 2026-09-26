@@ -1,5 +1,152 @@
 # 更新日志
 
+## v1.92（2026-09-26）
+- **生成提交改走实例侧官方文档风格 API**（`/h3ui/v1/video_generation`）：工作流图固化在服务端
+  （`h3ui_api.py` custom node），App 只传业务参数（prompt/分辨率/时长/seed/turbo/首尾帧），
+  彻底隔离 ComfyUI 版本、节点注册名、模型文件名差异。配套端点：
+  `GET /h3ui/v1/queries/video_generation`（状态查询）、`GET /h3ui/v1/files/retrieve`（结果取回）、
+  `GET /h3ui/v1/models`（模型就绪状态）；响应带 `base_resp{status_code,status_msg}` 对齐官方风格
+- 服务端动态模型适配：从 `/object_info` 实际枚举按优先级挑选模型文件（int8→fp8→int4→bf16 等），
+  模型缺失时返回 2013 明确报错而非 400 哑错；首尾帧支持已上传文件名 / base64 dataURL / URL
+- App 端 `generate()` 改调新 API（task_id 即 prompt_id，WS 进度与历史轮询逻辑不变），
+  删除客户端 `buildWorkflow()`；业务错误快速失败不重试，新增「模型未就绪」i18n
+- **根因修复**：400 真因是新实例上没有任何 H3 模型文件（镜像仅含 ComfyUI 本体）。
+  新增 `boot/h3_models_download.sh`：ModelScope 魔搭源（Comfy-Org/MiniMax-H3）下载
+  DiT int8 + Qwen3-VL nvfp4_awq + 视频/音频 VAE + Turbo LoRA（约 41.4 GiB，幂等可续传）
+
+## v1.91（2026-09-26）
+- **重写公网转发地址获取链**（`autoSetApi`），三级严格按优先级，任一级实测可用即停：
+  ① Web 数据——实例卡缓存 + detail 接口的结构化字段（`service_6006_domain` 等）逐个实测
+  ② 转发地址寻找——全量 JSON 深度扫描 `*.seetacloud.com`（`u数字-` 前缀独立转发优先）逐个实测
+  ③ SSH 寻找——读实例内 proxy 进程环境变量自报地址（`AutoDLService6006URL` 等），实测通过采用，
+  ComfyUI 启动中暂未响应也先填入由连接层重试
+- 探测/自报/扫描拆为独立函数（`fwdFromFields` / `fwdFromScan` / `fwdProbe` / `fwdPick` / `fwdFromSsh`），
+  失败分支不再挂已停用的隧道调用；新增 `autoSetApiBusy` 防轮询重入
+- 失败时清掉残留的 `http://127.0.0.1` 本地隧道地址；提示行显示获取进度与失败说明（中英文）
+
+## v1.90（2026-09-26）
+
+**公网转发地址自动获取（实例自报）**：经真机 SSH 实测确认——AutoDL 容器内 `proxy`
+进程的环境变量 `AutoDLService6006URL` / `AutoDLServiceURL` 直接携带本机公网转发地址
+（如 `https://uXXXXX-xxx.<区>.seetacloud.com:8443`），且该地址 `/system_stats` 实测 200。
+
+- 新增 `sshFindForward`：经 SSH 读实例环境变量提取转发地址（正则校验 seetacloud 域名）
+- `autoSetApi` 取址顺序：实例自报地址（实测通过）→ API 数据候选逐个实测 → 自报地址
+  未实测通过也填入 → 数据候选首选兜底
+- SSH 隧道数据通道保持停用（`SSH_TUNNEL_ON=false`）；SSH 仅用于读地址与部署端点
+
+## v1.89（2026-09-26）
+
+**修复启动后仍沿用 127.0.0.1 隧道地址**：本地存储里残留的隧道地址在隧道停用后不会被
+替换。轮询的陈旧检测改为：隧道停用时任何 `http://127.0.0.1` API 地址一律视为陈旧，
+实例运行中即自动触发 `autoSetApi` 换成实测可用的公网转发地址（轮询周期 4 秒内生效）。
+
+## v1.88（2026-09-26）
+
+**SSH 隧道路径暂时停用**：公网转发地址（seetacloud 独立转发 + 逐候选实测）可用后，
+SSH 隧道回退不再需要。新增开关 `SSH_TUNNEL_ON = false`，`sshTunnelApi` 直接短路返回
+null（无公网转发时回到「提示手动填写」的原行为）；隧道/探测代码全部保留，改回
+`true` 即可恢复。新手引导的 SSH 自动部署（放端点脚本）不受影响，照常工作。
+
+## v1.87（2026-09-26）
+
+**修复公网转发地址选错**：实例数据里 `service_6006_domain` 可能指向 JupyterLab（6006 是
+Lab 的端口），旧逻辑盲信该字段导致填错 ComfyUI 地址。真正有效的是
+`https://uXXXXX-xxx.nmb1.seetacloud.com:8443` 这类独立转发。
+
+- `findForwardUrl` 重构为 `forwardCandidates`：收集实例数据中全部 seetacloud 转发地址
+  （无端口补 `:8443`），排序为 u 前缀独立转发 → 其余 seetacloud → `service_6006_domain`
+- `autoSetApi` 逐候选实测 `GET /system_stats`（6s 超时），只用真正应答 ComfyUI 的地址；
+  全部探测失败时仍回填首选让 connect 报具体错误
+-隧道回退逻辑不变（v1.86 的实例侧端口探测对无公网转发的地区依然生效）
+
+## v1.86（2026-09-26）
+
+**修复隧道 HTTP 404**：404 说明隧道已通、请求已到实例并拿到 HTTP 响应，但 6006 上
+应答的不是 ComfyUI（部分镜像的启动器/平台代理占 6006，ComfyUI 实际在 8188 等端口）。
+
+- 建隧前先经 SSH 在实例侧探测：逐候选端口（6006、8188）`curl /system_stats`，哪个返回
+  200 就转发哪个；探测失败回落 6006
+- 自动部署验证（`/h3ui/stats`）同样改为逐端口探测（`curl -sf` + `break`）
+- 提示文案去掉硬编码 6006（「本机 127.0.0.1 → 实例 ComfyUI 端口」）
+
+## v1.85（2026-09-26）
+
+**修复 v1.84 启动即 `net::ERR_INVALID_RESPONSE`**：WebViewAssetLoader 的加载 URL 写成了
+`/assets/index.html`，但资产文件名是 `h3_console.html`，处理器找不到文件返回无效响应。
+改为 `https://appassets.androidplatform.net/assets/h3_console.html`，其余同 v1.84。
+
+## v1.84（2026-09-26）
+
+**修复：SSH 隧道本地转发地址 `http://127.0.0.1:<port>` 页面侧 fetch 全部 Failed to fetch。**
+
+- 根因：页面此前以 `file://`（null 源）加载，Chromium 对 null 源访问回环地址的 PNA/CORS 拦截发生在预检之前，v1.83 的预检代答无从生效
+- 结构性修复：MainActivity 改用 **WebViewAssetLoader**，页面以 `https://appassets.androidplatform.net/assets/index.html` 正式源加载；https 源访问回环地址属「安全上下文访问可信回环」，fetch/ws 正常放行；PNA 预检代答保留兜底
+- token 迁移：登录成功时同步存 SharedPreferences（`h3cfg/token`），换源后首次 `onPageFinished` 若页面无 token 自动注入（applyToken），无需重新登录；页面内登出经新增原生桥 `H3App.clearToken()` 同步清除持久化 token，避免重载后被自动登回
+- 隧道健康检查失败时提示行附上最后一次 fetch 的真实错误（`[TypeError: ...]` / `[HTTP xxx]`），便于真机排查
+- 新增依赖 `androidx.webkit:webkit:1.10.0`（首次构建需联网拉取）
+- 注意：换源后 localStorage 域切换，语言/主题/新手等级等偏好会重置一次（token 已自动迁移）
+
+## v1.83（2026-09-26）
+
+- **修复 SSH 隧道访问本地转发地址 Failed to fetch**：`file://` 页面访问 `http://127.0.0.1` 触发 Chromium **Private Network Access** 预检（`Access-Control-Request-Private-Network`），ComfyUI 的 CORS 扩展不回 `Access-Control-Allow-Private-Network: true` 导致请求被拦——WebView `shouldInterceptRequest` 现在代答对 127.0.0.1/localhost 的 OPTIONS 预检（回显 Origin/Method/Headers + `ACAPN: true`）
+- **隧道健康检查**：建隧后以页面侧真实 `fetch /system_stats` 验证（3 次 × 8s 超时），通过才写入 API 地址；失败则断开会话、提示具体错误并冷却 60 秒（避免 4s 轮询反复重连），冷却期内 staleTunnel 自愈同样挂起
+- 隧道会话移除 socket 读超时（SO_TIMEOUT 会误杀空闲长连接），仅保留 15s keepalive 与 25s 连接超时
+- APK versionCode 54
+
+## v1.82（2026-09-26）
+
+- **DEBUG 面板（仅 debug 签名的 APK 显示）**：新增原生桥 `H3App.isDebug()`（读 `FLAG_DEBUGGABLE`，release 构建自动隐藏全部调试入口）
+  - 设置页「DEBUG」虚线框：**模拟新手**（清除使用模式记录，重载后重放模式选择屏 + 新手租机引导，保留登录态）、**清除数据**（`localStorage.clear()` 回到首次安装状态）、**打开开屏页**（重放开屏登录页，附 DEBUG 关闭按钮）
+  - 实例页「一键配置」：对当前选中实例手动触发自动部署全流程（开机 → SSH 部署三连 → 重启 → 验证），部署脚本幂等可重复执行
+- APK versionCode 53
+
+## v1.81（2026-09-26）
+
+- **无公网转发地区经 SSH 隧道调用 ComfyUI**：部分地区的实例不提供 `service_6006_domain` 公网转发地址——`autoSetApi` 找不到转发地址时自动改走 SSH 本地端口转发（JSch `setPortForwardingL`，手机 127.0.0.1 随机端口 → 实例侧 127.0.0.1:6006），REST 与 WebSocket 全部经隧道，提示「已通过 SSH 隧道连接」
+- APK 新增原生桥 `H3App.sshTunnelOpen()/sshTunnelClose()`（会话表管理，15s keepalive）；Manifest 已有的 `usesCleartextTraffic` 使本地明文 http/ws 可用
+- 自愈：App 重启后旧隧道端口失效，轮询检测到与现存隧道不一致的 `127.0.0.1` API 地址即自动重建；实例关机/切走公网实例时自动断开隧道；轮询期间加 busy 防重复建隧
+- APK versionCode 52
+
+## v1.80（2026-09-26）
+
+- **自动部署期间实例卡显示「自动配置中」角标**：新手租机进入自动部署流程后，对应实例卡右上角挂电光青脉冲角标（`cfgTag`，与无卡模式角标同位互斥），配置完成/失败/跳过后自动摘除；部署阶段进度仍同步显示在实例页电源提示行
+- APK versionCode 51
+
+## v1.79（2026-09-26）
+
+- **新手流程自动部署实例侧组件**：新手租机下单成功后全自动完成环境准备——等待实例进入列表并选中 → 自动开机并等 running → 解析实例卡 SSH 命令与 root 密码 → SSH 拉取部署三连（`h3ui_api.py` 入 custom_nodes、`start_h3.sh`、`autodl_boot.sh` 追加到 `/etc/autodl.sh`；GitHub 不通自动先走学术加速）→ 重启实例使 custom_nodes 端点加载 → SSH 内 `curl 127.0.0.1:6006/h3ui/stats` 验证端点，全程实例页电源提示行显示阶段进度
+- APK 新增原生桥 `H3App.sshExec()`（JSch/`com.github.mwiede:jsch:0.2.17`，后台线程执行单命令，完成后回注 `window.__sshDone`）；浏览器端无桥时跳过自动部署并提示
+- 部署任一步失败均给出输出尾部与「按 README 手动执行部署三连」提示，不影响实例本身可用
+- APK versionCode 50
+
+## v1.78（2026-09-26）
+
+- **新手租机引导·充值入口**：确认租用与稍后再说之间新增「充值」按钮（ghost 样式，复用设置页同款 i18n 文案），点击经 `openExternal` 打开 AutoDL 充值页（App 内走三级回退外链）；余额不足报错时按钮就在错误提示旁，不必离开引导流程
+- APK versionCode 49
+
+## v1.77（2026-09-26）
+
+- **新手租机引导·价格标注与自动选优**：GPU 型号下拉接入页面内 Tom Select 框架（支持输入过滤），每个型号在其自动匹配区查询按量单价，下拉项标注「¥{p}/时起」；型号列表按最低价升序排列（查不到价的沉底），**最便宜的型号自动排最上并默认选中**
+- 地区行同步显示所选型号的匹配区、空闲数与单价（`{name} · 空闲 {idle} 张 · ¥{p}/时`）
+- APK versionCode 48
+
+## v1.76（2026-09-26）
+
+- **开屏引导两屏化**：首屏仅保留原生登录（移除粘贴令牌入口）；登录成功后进入第二屏「选择使用模式」全屏页（标题 + 新手/老手纵向堆叠卡片），选定即持久记录（`localStorage h3_level`）并进入主界面；已登录但未选过的老用户升级后首开直接进第二屏补选
+  - **新手第三屏·租机引导**：选「新手」后紧接全屏租机页（不弹内部租用弹窗）——仅 GPU 型号可选（只列当前有空闲的型号并汇总空闲数），地区按空闲数量自动匹配（取空闲最多区），镜像锁定 ComfyUI v18 社区镜像（image_id 799 / v18），机器自动选同型号最低价空闲机；可「稍后再说」跳过
+  - 新手：实例页显示流程引导提示（租用 → 开机 → 选实例 → 生成 → 定时关机）
+  - 老手：ComfyUI API 地址输入框常显，跳过引导
+  - 设置页新增「使用模式」行，显示当前模式并可随时重新选择（同款全屏页）
+  - 引导屏全部走主题变量与中英文 i18n
+
+## v1.75（2026-09-26）
+
+- **新增开屏登录页**：仅首次打开且未持有 AutoDL 令牌时全屏拦截，登录后才进入主界面；此后无论登录状态如何都不再显示（已登录首开也直接跳过）
+  - App 内走原生登录（`H3App.openLogin()` → `applyToken` 回注），登录成功自动进入并拉取实例/账户
+  - 浏览器端提供**粘贴令牌进入**入口（与原生登录同一条令牌通道，回车前后 trim）
+  - 登录提示（未登录/已登录/过期等）同步显示在开屏页与设置页；主题与中英文随全局设置
+
 ## v1.74（2026-09-26）
 
 - **性能监测面板折叠**：与「定时关机」「高级参数」同款折叠（Alpine x-collapse，默认收起），标题沿用面板小标题排版（电光青左侧条以箭头替代）；折叠不影响数据采集，CPU/GPU/显存/内存/队列监控在收起状态下照常更新

@@ -1,6 +1,6 @@
 # H3 Console 项目结构与功能文档
 
-> 更新时间：2026-09-26 · 代码基线：v1.74（v1.35–v1.63 曾长期未提交，随 v1.64 一并入库）
+> 更新时间：2026-09-26 · 代码基线：v1.92（v1.35–v1.63 曾长期未提交，随 v1.64 一并入库）
 > 逐版本变更见 [CHANGELOG.md](CHANGELOG.md)，本文只描述当前形态与设计。
 
 ## 1. 项目定位
@@ -14,7 +14,19 @@ H3 Console 是一个在租用 GPU（AutoDL 标准区 4090 等）上通过 ComfyU
 
 关键背景：AutoDL 官方 API 管不了标准区实例的开关机，项目实际使用的是**网页控制台内部 API
 （`https://www.autodl.com/api/v1/`）的重放**（逆向笔记见 `autodl-console-api-note/README.md`）。
-ComfyUI 转发地址来自实例数据的 `service_6006_domain` 字段（仅在 running 后存在）。
+ComfyUI 公网转发地址获取链见 §3「公网转发地址获取链」（v1.91 起三级优先级）。
+
+**生成提交走实例侧官方风格 API**（v1.92）：App 不再本地组工作流图 POST `/prompt`，
+改调 ComfyUI custom node `h3ui_api.py` 暴露的 MiniMax 文档风格端点——
+`POST /h3ui/v1/video_generation`（业务参数：prompt/width/height/length/seed/turbo/strength/
+first_frame/last_frame/client_id；服务端从 `/object_info` 实际枚举动态选模型文件并组装工作流，
+内部自提交通进同一队列，返回 `task_id` 即 prompt_id，App 的 WS 进度与 `/history` 轮询不变）、
+`GET /h3ui/v1/queries/video_generation?task_id=`（Queued/InProgress/Completed/Failed + file_id）、
+`GET /h3ui/v1/files/retrieve?file_id=`（output 文件下载）、`GET /h3ui/v1/models`（就绪状态）。
+响应统一 `base_resp{status_code,status_msg}`；模型缺失返回 2013。
+模型文件（约 41.4 GiB：DiT int8 + Qwen3-VL nvfp4_awq + 双 VAE + Turbo LoRA）由
+`boot/h3_models_download.sh` 从 ModelScope 魔搭（`Comfy-Org/MiniMax-H3`）下载，
+幂等可续传。`boot/start_h3.sh` 无卡模式自动加 `--cpu`（ComfyUI 0.35 无 GPU 会硬崩溃）。
 
 ## 2. 目录结构
 
@@ -91,6 +103,23 @@ version 为字符串比较）→ 数量 → `order/price/preview` 估价 → `ma
 `reproduction_uuid:"uuid:v版本"` + `reproduction_id`）。`MachineGpuNumUpdateFailed` 提示刷新重选，
 `InsufficientBalance` 提示充值（需覆盖 1 小时费用）。
 
+**开屏与引导**（v1.75–v1.77）
+- 开屏登录页：仅未持有 AutoDL 令牌时全屏拦截一次（App 走原生 `openLogin`，浏览器提供粘贴令牌入口）
+- 模式选择屏：新手/老手卡片（`localStorage h3_level`），设置页「使用模式」可重选
+- **新手租机引导屏**（`#nbMask`）：仅 GPU 型号可选——并发查各地区 `machine/region/gpu_type`，
+  只保留有空闲的型号并汇总空闲数；每型号在其空闲最多区查 `user/machine/list` 取最低按量价，
+  下拉项标注「¥{p}/时起」并按最低价升序排列（Tom Select，查不到价沉底），**最便宜型号默认选中**；
+  地区按空闲数量自动匹配（`nbBest`），镜像锁定 ComfyUI v18 社区镜像（image_id 799 / v18 字符串比较），
+  机器自动选同型号最低价空闲机，下单走 `order/instance/create/payg`（与租用弹窗同款错误分支）；
+  按钮区含「充值」ghost 按钮（`openExternal` 打开 `autodl.com/recharge`，余额不足时无需离开引导）；
+  可「稍后再说」跳过
+- **下单后自动部署**（v1.79，`nbDeployFlow`）：下单成功 → 等实例入列并选中 → 自动开机等 running →
+  解析实例卡 `ssh_command`（`-p PORT root@HOST`）与 `root_password` → 原生桥 `H3App.sshExec`
+  （JSch，MainActivity 后台线程，回调 `window.__sshDone`）执行部署三连（先 `source /etc/network_turbo`）→
+  `power_off`/`power_on` 重启使 custom_nodes 端点加载 → SSH 内 `curl 127.0.0.1:6006/h3ui/stats`
+  验证；各阶段进度写在实例页电源提示行，失败提示按 README 手动部署。浏览器端无原生桥自动跳过。
+  部署期间对应实例卡右上角显示脉冲「自动配置中」角标（`nbDeployingUuid` + `cfgTag`，结束自动摘除）
+
 ### 3.3 数据层（localStorage）
 
 | 键 | 内容 |
@@ -135,8 +164,23 @@ ComfyUI 侧与 AutoDL 侧各有适配器注册表（v1.72）：`registerComfyAda
   响应统一 `{code:"Success"}` 校验，失败重试 1 次（间隔 2s），30s 超时；
   `dlCall`/`dlGet`/`dlPut`/`dlHeaders` 与租用下单均为适配器委托
 
-`findForwardUrl` 从实例数据提取 `service_6006_domain`（拼 `https://`，无端口补 `:8443`），
-兜底匹配 `*.seetacloud.com`。
+**公网转发地址获取链**（v1.91 重写，`autoSetApi`，三级严格按优先级、任一级实测 `/system_stats`
+通过即停；`autoSetApiBusy` 防轮询重入）：
+① Web 数据——实例卡缓存 + `instance/detail` 接口的结构化字段（`fwdFromFields`，
+`service_6006_domain` 可能指向 JupyterLab，必须实测）；② 转发地址寻找——全量 JSON 深度扫描
+`*.seetacloud.com`（`fwdFromScan`，`u数字-` 前缀独立转发优先）；③ SSH 寻找——读实例内
+proxy 进程环境变量自报地址（`fwdFromSsh`，`AutoDLService6006URL` 等为权威来源；ComfyUI
+启动中暂未响应也先填入，由连接层重试）。全部失败清残留 `127.0.0.1` 地址并提示手动填写。
+SSH 隧道数据通道已停用（`SSH_TUNNEL_ON=false`），SSH 仅用于读地址与部署端点脚本
+（历史：v1.81 引入隧道、v1.83 PNA 预检代答、v1.86 实例侧端口探测，代码保留待复用）。
+回环访问受 Chromium **PNA** 限制（v1.83 试以预检代答修复，v1.84 结构性修复）：
+页面改经 **WebViewAssetLoader** 以 `https://appassets.androidplatform.net/assets/index.html`
+正式源加载（file:// 的 null 源访问回环地址在预检之前即被拦截，代答无从生效；https 源
+访问回环属「安全上下文访问可信回环」放行）；`shouldInterceptRequest` 对 127.0.0.1 的
+OPTIONS 预检代答并补 `Access-Control-Allow-Private-Network: true` 兜底；建隧后页面侧
+`fetch /system_stats` 健康检查，失败断开并冷却 60s（`sshTunnelFailAt`），提示行附最后
+一次 fetch 真实错误。登录 token 同步存 SharedPreferences（`h3cfg/token`），换源/重装后
+`onPageFinished` 自动注入；页面登出走 `H3App.clearToken()` 同步清除。
 
 ## 4. APK 壳（com.h3.console）
 
@@ -146,7 +190,13 @@ ComfyUI 侧与 AutoDL 侧各有适配器注册表（v1.72）：`registerComfyAda
   `openLogin()`（拉起 LoginActivity，onActivityResult 回传 token 经 `applyToken()` 注入页面）、
   `openUrl()`（外链三级回退：声明了具体 host 的原生 App → Chrome Custom Tabs → 系统浏览器，
   判据 `ri.filter.countDataAuthorities()>0`）、`setLightSystemBars(light)`（状态栏图标随主题）、
-  `copyText()`（剪贴板 + toast）
+  `copyText()`（剪贴板 + toast）、`sshExec(id, host, port, user, password, cmd)`
+  （JSch 单命令执行，完成后 evaluateJavascript 回注 `window.__sshDone(id, code, out)`）、
+  `sshTunnelOpen(id, host, port, user, password, remotePort)` / `sshTunnelClose(id)`
+  （JSch 本地端口转发 `setPortForwardingL("127.0.0.1", 0, "127.0.0.1", remote)`，
+  回注 `window.__tunnelDone(id, "<localPort>")`，会话表 keepalive 15s）、
+  `isDebug()`（FLAG_DEBUGGABLE；为 true 时设置页显示 DEBUG 虚线框：模拟新手 / 清除数据 / 打开开屏页，
+  实例页显示「一键配置」= 对选中实例手动跑 `nbDeployFlow`；release 自动隐藏）
 - `WebChromeClient.onShowFileChooser`：`<input type=file>` 在 Android WebView 必须实现此回调才响应
 - `DownloadListener`：下载存 `Pictures/product/时间戳.mp4`；Q 以下申请写存储权限
 - `LoginActivity`：WebView 打开 `autodl.com/console/`，每 2s 轮询 `localStorage.getItem('token')`，
