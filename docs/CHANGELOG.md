@@ -1,5 +1,11 @@
 # 更新日志
 
+## v2.03（2026-09-27）
+
+- **修复「卡在第六步 + 进度一直是问号」的真正根因**：`nbProbe` 的进程探测 `pgrep -fc 'h3_models_downloa[d]'` 会匹配到探测命令自身（命令行含日志路径 `h3_models_download.log`），恒返回 ≥1 → App 误判「下载进程在跑」→ 永远不启动下载 → 无日志、无 models 目录 → `du` 返回空 → 进度显示 `?`。改为 `h3_models_download[.]sh` 模式（探测命令行只含 `.log` 路径与带括号的字面量，不再自匹配）
+- **修复下载启动命令 pkill 自杀隐患**：同一条 shell 命令行含 `h3_models_download.sh`（setsid 段），`pkill -f` 会 SIGTERM 自身父 shell，导致 `setsid` 永远执行不到。改为 `pgrep` + `$$` 排除自身的安全 kill 循环
+- bjb1（社区镜像）实测定位：镜像 ComfyUI 在系统盘 `/root/ComfyUI`（8G），数据盘仅部署壳目录；已确认 `nvidia-smi` 权限拒绝（无卡环境）
+
 ## v2.02（2026-09-27）
 - 重要：适配社区镜像布局（bjb1 实测）——镜像内置 ComfyUI 在系统盘 /root/ComfyUI，开机脚本会将其迁移到数据盘；但部署四连的 mkdir 提前占位 /root/autodl-tmp/ComfyUI 可能阻止迁移，导致组件装进空壳目录、models 目录不存在（即下载进度「问号」根因：du 报 No such file 被吞 → 空值）
 - 部署链新增「布局就绪」步骤（nbProbe 增加 C0=main.py 检查）：数据盘无本体而系统盘有 → 部署流程主动完成等效迁移（暂存我方文件 → 壳目录 <10MB 才删 → mv 本体 → 恢复，600s 超时），与镜像开机迁移幂等兼容；迁移后复探组件位置
