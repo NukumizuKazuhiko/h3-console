@@ -17,7 +17,7 @@
 # ============================================================================
 set -u
 
-SELF_VER="1.1"
+SELF_VER="1.2"
 REPO="NukumizuKazuhiko/h3-console"
 BRANCH="main"
 BASE="/root/autodl-tmp"
@@ -46,21 +46,30 @@ if command -v flock >/dev/null 2>&1; then
 fi
 
 # ---- 源候选：前缀 + /相对路径（与 raw 的目录结构一致）----------------------
+# 实测（2026-09-28，bjb1 容器内）：
+#   ghproxy.net   实时，0.9s  ................. 首选
+#   raw（需学术加速 /etc/network_turbo）实时，7s
+#   gh-proxy.com  同一 URL 命中 CDN 缓存，会返回旧版（曾导致自检恒报「已是最新」）
+#   jsDelivr      对分支有小时级缓存
+#   ※ 不可靠技巧：给这类代理 URL 加 ?t= 会破坏其原始 URL 解析（返回空内容）；
+#     Cache-Control: no-cache 头无效。只能靠「实时源在前」+ 缓存源兜底并标注。
 SRC_FAST=(
-  "https://gh-proxy.com/https://raw.githubusercontent.com/$REPO/$BRANCH"
   "https://ghproxy.net/https://raw.githubusercontent.com/$REPO/$BRANCH"
+  "https://gh-proxy.com/https://raw.githubusercontent.com/$REPO/$BRANCH"
 )
 SRC_TURBO=(
   "https://raw.githubusercontent.com/$REPO/$BRANCH"
   "https://cdn.jsdelivr.net/gh/$REPO@$BRANCH"
 )
+# 已知带 CDN 缓存、可能滞后的源
+is_cached_src(){ case "$1" in *"gh-proxy.com"*|*"jsdelivr.net"*) return 0 ;; *) return 1 ;; esac; }
 
 probe(){ curl -fsS -m 12 -o /dev/null "$1/h3ui_api.py" 2>/dev/null; }
 
 try_sources(){
   local u last=""
   [ -f "$SRC_OK" ] && last=$(cat "$SRC_OK" 2>/dev/null || true)
-  if [ -n "$last" ] && probe "$last"; then echo "$last"; return 0; fi
+  if [ -n "$last" ] && ! is_cached_src "$last" && probe "$last"; then echo "$last"; return 0; fi
   for u in "${SRC_FAST[@]}"; do probe "$u" && { echo "$u"; return 0; }; done
   source /etc/network_turbo >/dev/null 2>&1
   for u in "${SRC_TURBO[@]}"; do probe "$u" && { echo "$u"; return 0; }; done
@@ -74,6 +83,7 @@ for a in "$@"; do [ "$a" = "--no-selfupdate" ] && ALLOW_SELF_UPDATE=0; done
 if [ "$ALLOW_SELF_UPDATE" = "1" ]; then
   U=""
   [ -f "$SRC_OK" ] && U=$(cat "$SRC_OK" 2>/dev/null || true)
+  [ -n "$U" ] && is_cached_src "$U" && U=""      # 缓存源不可信，改走实时源重新探测
   [ -n "$U" ] || U=$(try_sources || true)
   if [ -n "$U" ]; then
     N="$BASE/.h3_self.new"
@@ -93,8 +103,13 @@ PREFIX=$(try_sources) || {
   log "所有更新源均不可达，本次跳过（保留现有组件）"
   exit 0
 }
-echo "$PREFIX" > "$SRC_OK"
-log "更新源：$PREFIX"
+if is_cached_src "$PREFIX"; then
+  rm -f "$SRC_OK"   # 不记住缓存源，下次开机重新探测实时源
+  log "更新源：$PREFIX（该源带 CDN 缓存，可能滞后；实时源均不可达时的兜底）"
+else
+  echo "$PREFIX" > "$SRC_OK"
+  log "更新源：$PREFIX"
+fi
 
 # ---- 组件清单：名称|目标路径|仓库相对路径 ----------------------------------
 COMPONENTS=(
