@@ -4,25 +4,27 @@
 #      （旧版 h3ui_api.py 缺 /h3ui/v1/* 路由会让生成报 Failed to fetch）
 #   ② 再确认 ComfyUI 在跑：6006 不通则用 setsid 拉起 start_h3.sh
 #      （日志 /root/autodl-tmp/comfyui_h3.log）
-# 注意：容器内 raw.githubusercontent.com 通常不可达，故走代理兜底：
-#       ghfast.top → ghproxy.net → jsDelivr（这些代理带 CDN 缓存，只用于首次补齐；
-#       自检脚本随后会用「raw + 学术加速」这一实时权威源校正版本）
+# 更新源：只用官方 GitHub，两条网络路径——直连优先，不通再开学术加速
+#       （source /etc/network_turbo）。不使用 gh-proxy 类第三方加速站，它们各自
+#       带 CDN 缓存，同一文件会返回不同版本。自检脚本随后用 commit-sha pin 的
+#       权威源校正版本。
 # ComfyUI 本体可能在数据盘（/root/autodl-tmp/ComfyUI）或系统盘（/root/ComfyUI，社区镜像），
 # 自检脚本会同步插件到两处。
 (
 sleep 5
 SELF=/root/autodl-tmp/h3_selfcheck.sh
+U=https://raw.githubusercontent.com/NukumizuKazuhiko/h3-console/main/boot/h3_selfcheck.sh
 if [ ! -s "$SELF" ]; then
-  for U in \
-    "https://ghfast.top/https://raw.githubusercontent.com/NukumizuKazuhiko/h3-console/main/boot/h3_selfcheck.sh" \
-    "https://ghproxy.net/https://raw.githubusercontent.com/NukumizuKazuhiko/h3-console/main/boot/h3_selfcheck.sh" \
-    "https://cdn.jsdelivr.net/gh/NukumizuKazuhiko/h3-console@main/boot/h3_selfcheck.sh" ; do
-    curl -fsSL -m 25 -o "$SELF" "$U" 2>/dev/null && [ -s "$SELF" ] && break
-  done
+  curl -fsSL -m 25 -o "$SELF" "$U" 2>/dev/null || true
+  if [ ! -s "$SELF" ] && [ -f /etc/network_turbo ]; then
+    . /etc/network_turbo >/dev/null 2>&1
+    curl -fsSL -m 25 -o "$SELF" "$U" 2>/dev/null || true
+  fi
+  sed -i 's/\r$//' "$SELF" 2>/dev/null
   chmod +x "$SELF" 2>/dev/null
 fi
 [ -s "$SELF" ] && bash "$SELF" >/dev/null 2>&1   # 日志由自检脚本自身写入 h3_selfcheck.log（勿再重定向，否则重复）
 sleep 8
-curl -s -o /dev/null --max-time 3 http://127.0.0.1:6006/system_stats \
+curl -s -o /dev/null --max-time 3 --noproxy '*' http://127.0.0.1:6006/system_stats \
   || setsid bash /root/autodl-tmp/ComfyUI/start_h3.sh >> /root/autodl-tmp/comfyui_h3.log 2>&1 < /dev/null
 ) &
