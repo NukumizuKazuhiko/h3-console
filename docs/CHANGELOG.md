@@ -1,5 +1,17 @@
 # 更新日志
 
+## v2.11（2026-09-27）连接链路重构（修「正常实例也 Failed to fetch」）
+审计与设计见 docs/CONNECTION.md。根因：AutoDL 每次开机换转发地址，而旧实现的自动重发现条件
+只认 `lastInstOn` 由 false 变 true 的边沿 + 「地址是否 127.0.0.1」，实例一直 running 时永不刷新 →
+永久卡在上次会话的陈旧地址。
+- 新增连接状态机 `setConnState()`（init/connecting/online/offline/instOff/nonGpu/noApi）：
+  统一渲染 dotConn/connText/statusBox，废弃「用 UI 文本判断状态」（旧实现切语言即失效）
+- 新增地址自愈：连接连续失败 2 次（约 8s）或地址陈旧 → 强制重跑三级地址发现链（内部 8s/15s 节流）
+- 新增地址-实例绑定 `h3_api_bind`：切实例即视为陈旧，避免沿用别的实例地址
+- 统一无卡判定 `isNonGpuInst()`（此前 4 处各写一遍、条件不一致）
+- 启动不再盲发连接请求：先由实例轮询确定实例态，pollStatus 在实例态未知时只等待
+- 移除 SSH 隧道死代码（SSH_TUNNEL_ON 恒 false）及其残余判断
+
 ## v2.10（2026-09-27）
 - 实例选择下拉框不再自动关闭：每秒轮询只在选项签名变化且下拉收起时才重建选项（此前每秒 clearOptions+setValue 会把展开的下拉强制收起）
 - 修复页面底部内容被悬浮导航栏遮挡：页面容器底部留白从 12px 提升到 92px（含安全区）

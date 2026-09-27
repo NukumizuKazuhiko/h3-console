@@ -597,7 +597,7 @@ html[data-theme="light"] .ts-dropdown{box-shadow:0 16px 40px rgba(24,22,23,.16)}
       <button class="ghost" onclick="dbgSplash()" data-i18n="dbgSplash">打开开屏页</button>
     </div>
   </div>
-  <div class="hint">v2.10</div>
+  <div class="hint">v2.11</div>
 </div>
 </div>
 </div>
@@ -1587,7 +1587,7 @@ registerComfyAdapter("comfyui", {
 function api(path){ return comfy().url(path); }
 function nb(path){ return comfy().nb(path); }
 function saveApi(){ localStorage.setItem("h3_api", $("apiBase").value); }
-$("apiBase").addEventListener("change", ()=>{ saveApi(); connect(); });
+$("apiBase").addEventListener("change", ()=>{ saveApi(); apiBind($("dlInst").value, $("apiBase").value.trim()); connect(); });
 
 registerDlAdapter("autodl", {
   name: "autodl",
@@ -1688,7 +1688,7 @@ function logoutAutoDL(){
   setLoginHint("");
   renderAccount();
 }
-$("dlInst").addEventListener("change", ()=>{ localStorage.setItem("h3_inst", $("dlInst").value); updateInstUI(); autoSetApi(); refreshHist(); });
+$("dlInst").addEventListener("change", ()=>{ localStorage.setItem("h3_inst", $("dlInst").value); updateInstUI(); autoSetApi(true); refreshHist(); });
 
 function showAdv(){ $("advBox").style.display = ""; }
 
@@ -1699,7 +1699,7 @@ function fmtElapsed(el){ return t("elapsed") + " <b>"+Math.floor(el/60)+":"+Stri
 // ② 转发地址寻找：detail 接口全量 JSON 深度扫描 *.seetacloud.com（u 前缀独立转发优先），逐个实测
 // ③ SSH 寻找：读实例内 proxy 进程环境变量自报地址（AutoDLService6006URL / AutoDLServiceURL）
 // 任一级拿到实测可用（/system_stats 200）的地址即停；全部失败才提示手动填写。
-// SSH 仅用于读地址与部署端点脚本，不做数据通道（隧道已停用，SSH_TUNNEL_ON=false）。
+// SSH 仅用于读地址与部署端点脚本，不做数据通道（SSH 隧道自 v1.88 停用、v2.11 已移除代码）。
 
 function fwdNorm(u){ return /:\d+\/?$/.test(u) ? u.replace(/\/$/, "") : u + ":8443"; }
 // ① 结构化字段。注意 service_6006_domain 可能指向 JupyterLab 而非 ComfyUI，必须实测后再采用
@@ -1737,35 +1737,60 @@ async function fwdFromSsh(uuid){
   return urls.length ? urls[0] : null;
 }
 
-let autoSetApiBusy = false; // 防止 1s 轮询期间重入（全链最长可达约 40s）
-async function autoSetApi(){
-  if(autoSetApiBusy || !$("dlInst").value) return;
+/* ---- 地址发现（v2.11 重构）----
+ * 触发点：① 实例轮询判定地址陈旧 ② 连接连续失败 ③ 启动/登录/切实例/手动刷新 ④ 生成前
+ * 三级链：实例卡+detail 字段 → seetacloud 转发地址深度扫描 → SSH 实例自报
+ * 节流：成功 15s 内不重复跑全链；force=true 绕过（地址刚失效、实例刚开机时用）
+ * 绑定：地址与实例 uuid 一起落盘，换实例即视为陈旧，避免沿用别的实例地址 */
+function apiBoundUuid(){ try{ return (JSON.parse(localStorage.getItem("h3_api_bind") || "null") || {}).uuid || ""; }catch(e){ return ""; } }
+function apiBind(uuid, url){ try{ localStorage.setItem("h3_api_bind", JSON.stringify({uuid: uuid || "", url: url || "", at: Date.now()})); }catch(e){} }
+// 地址是否陈旧：空 / 残留的已停用本地隧道地址 / 未绑定当前实例
+function apiStale(uuid){
+  const v = $("apiBase").value.trim();
+  if(!v) return true;
+  if(/^http:\/\/127\.0\.0\.1/.test(v)) return true;
+  return !!uuid && apiBoundUuid() !== uuid;
+}
+function apiHost(){ return ($("apiBase").value.match(/^https?:\/\/[^\/]+/) || [""])[0]; }
+let apiTryAt = 0;             // 最近一次地址发现尝试的时间（无论成败都记，用于节流）
+let connFailStreak = 0;       // ComfyUI 连接连续失败次数，成功清零
+let autoSetApiBusy = false;   // 防止轮询期间重入（全链最长可达约 40s）
+// 缺少实例上下文时仍允许连接（用户手填地址 + 未选实例 = 手动调试路径）
+function manualApiPath(){ return !$("dlInst").value && !!$("apiBase").value.trim(); }
+async function autoSetApi(force){
+  const uuid = $("dlInst").value;
+  if(autoSetApiBusy || !uuid) return;
   const it = curInst();
-  // v2.06：无卡模式无 ComfyUI/公网转发，不请求 detail、不探测地址，静默跳过
-  if(!it || it.status !== "running" || it.start_mode === "non_gpu") return;
+  if(!it) return;
+  // 无卡模式无 ComfyUI/公网转发，不请求 detail、不探测地址，静默跳过
+  if(it.status !== "running" || isNonGpuInst(it)) return;
+  // 节流：常规 15s 内不重复跑全链；force（地址刚失效/实例刚开机）放宽到 8s，防止轮询打爆三级链
+  if(Date.now() - apiTryAt < (force ? 8000 : 15000)) return;
+  apiTryAt = Date.now();
   autoSetApiBusy = true;
   $("pwrHint").textContent = t("fwdSearching");
   try{
     // Web 数据源：实例卡缓存数据 + detail 接口（两级都查，谁有地址用谁）
     const datas = [];
     if(it) datas.push(JSON.stringify(it));
-    try{ datas.push(JSON.stringify(await dlCall("/api/v1/instance/detail", {instance_uuid: $("dlInst").value}))); }catch(e){}
+    try{ datas.push(JSON.stringify(await dlCall("/api/v1/instance/detail", {instance_uuid: uuid}))); }catch(e){}
 
     let url = await fwdPick(datas.flatMap(fwdFromFields));      // ① Web 数据结构化字段
     if(!url) url = await fwdPick(datas.flatMap(fwdFromScan));   // ② 转发地址深度扫描
     if(!url){
-      const su = await fwdFromSsh($("dlInst").value);           // ③ SSH 实例自报
+      const su = await fwdFromSsh(uuid);                        // ③ SSH 实例自报
       if(su) url = (await fwdProbe(su)) || su;                  // 实测通过采用；ComfyUI 启动中暂未响应也先填入，由连接层重试
     }
     if(url){
       $("apiBase").value = url;
       saveApi();
+      apiBind(uuid, url);
+      connFailStreak = 0;
       $("pwrHint").textContent = "";
-      sshTunnelCloseCur();
       connect();
     }else{
       // 三级链全失败：清掉残留的本地隧道地址（隧道已停用，必然失效），提示手动填写
-      if(/^http:\/\/127\.0\.0\.1/.test($("apiBase").value)){ $("apiBase").value = ""; saveApi(); }
+      if(/^http:\/\/127\.0\.0\.1/.test($("apiBase").value)){ $("apiBase").value = ""; saveApi(); apiBind(uuid, ""); }
       $("pwrHint").textContent = t("noForward");
       showAdv();
     }
@@ -2252,74 +2277,9 @@ async function nbDeployFlow(uuid){
   }
 }
 
-// ---- SSH 隧道：无公网转发（service_6006_domain）地区经本地端口转发访问 ComfyUI ----
-// v1.88：公网转发地址可实测可用后，SSH 隧道路径暂时停用（不调用）；需要时改回 true 即可恢复
-const SSH_TUNNEL_ON = false;
-let sshTunnelCur = null;   // {id, url, uuid}
-let sshTunnelBusy = false; // 防止轮询期间重复建隧
-let sshTunnelFailAt = 0;   // 健康检查失败后的冷却（60s 内不再尝试）
-let sshTunnelLastError = ""; // 最近一次健康检查失败的 fetch 错误（用于提示行排查）
-window.__tunnelDone = function(id, res){
-  const f = window.__tunnelMap && window.__tunnelMap[id];
-  if(f){ delete window.__tunnelMap[id]; f(res); }
-};
-function sshTunnelReq(host, port, pass, remote){
-  return new Promise(resolve => {
-    if(!(window.H3App && window.H3App.sshTunnelOpen)) return resolve(null);
-    window.__tunnelMap = window.__tunnelMap || {};
-    const id = "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-    const tmo = setTimeout(() => { if(window.__tunnelMap[id]){ delete window.__tunnelMap[id]; resolve(null); } }, 40000);
-    window.__tunnelMap[id] = res => { clearTimeout(tmo); resolve(res ? {id: id, port: res} : null); };
-    window.H3App.sshTunnelOpen(id, host, port, "root", pass, remote);
-  });
-}
-function sshTunnelCloseCur(){
-  if(sshTunnelCur && window.H3App && window.H3App.sshTunnelClose) window.H3App.sshTunnelClose(sshTunnelCur.id);
-  sshTunnelCur = null;
-}
-async function sshTunnelApi(uuid){
-  if(!SSH_TUNNEL_ON || sshTunnelBusy || Date.now() - sshTunnelFailAt < 60000) return null;
-  if(sshTunnelCur && sshTunnelCur.uuid !== uuid) sshTunnelCloseCur();
-  if(sshTunnelCur) return sshTunnelCur.url;
-  const it = instListCache.find(i => i.uuid === uuid);
-  if(!it || !it.root_password) return null;
-  const m = String(it.ssh_command || "").match(/-p\s+(\d+)\s+root@(\S+)/);
-  if(!m) return null;
-  sshTunnelBusy = true;
-  try{
-    // 实例侧探测 ComfyUI 真实端口：6006 可能被启动器/平台代理占用（对 /system_stats 返回 404），
-    // 逐候选端口 curl 本机 /system_stats，哪个返回 200 就转发哪个；探测失败回落 6006
-    let remote = 6006;
-    const si = nbSshInfo(uuid);
-    if(si){
-      const pr = await sshExec(si.host, si.port, si.pass,
-        "for p in 6006 8188; do echo $p:$(curl -s -m 4 -o /dev/null -w %{http_code} http://127.0.0.1:$p/system_stats); done", 25);
-      const hit = String(pr.out || "").match(/(6006|8188):200/);
-      if(hit) remote = parseInt(hit[1]);
-    }
-    const r = await sshTunnelReq(m[2], parseInt(m[1]) || 22, it.root_password, remote);
-    if(!r) return null;
-    const url = "http://127.0.0.1:" + r.port;
-    // 隧道通不通以页面侧真实 fetch 为准（WebView 拦截器已代答 PNA 预检）
-    let ok = false, lastErr = "";
-    for(let i = 0; i < 3 && !ok; i++){
-      try{
-        const resp = await fetch(url + "/system_stats", {cache: "no-store", signal: AbortSignal.timeout(8000)});
-        if(resp.ok) ok = true; else lastErr = "HTTP " + resp.status;
-      }catch(e){ lastErr = e && e.message ? e.message : String(e); }
-      if(!ok) await nbWait(1500);
-    }
-    if(!ok){
-      // 通道建起但页面侧访问不了：断开会话并冷却，避免轮询反复重连
-      sshTunnelLastError = lastErr;
-      if(window.H3App && window.H3App.sshTunnelClose) window.H3App.sshTunnelClose(r.id);
-      sshTunnelFailAt = Date.now();
-      return "fail";
-    }
-    sshTunnelCur = {id: r.id, url: url, uuid: uuid};
-    return sshTunnelCur.url;
-  }finally{ sshTunnelBusy = false; }
-}
+// ---- SSH 隧道已于 v1.88 停用、v2.11 彻底移除 ----
+// 现只走「公网转发地址」一条路；SSH 仅用于读地址（fwdFromSsh）与部署/探测，不做数据通道。
+// 原生桥仍保留 sshTunnelOpen/sshTunnelClose 方法，但 JS 侧不再调用。
 // ---- 断点检测与步骤进度（v1.94）：八步逻辑步骤号 + localStorage 检查点 + 实例侧状态探测续跑 ----
 const NB_STEPS = 8;
 let nbStepCur = 0, nbStepUuid = "";
@@ -2624,6 +2584,9 @@ function renderBill(){
 let instOn = null;
 let lastInstOn = null;
 function curInst(){ return instListCache.find(i=>i.uuid === $("dlInst").value); }
+// 无卡判定唯一实现（v2.11）：此前 autoSetApi/connect/pollStatus 各写一遍，条件还不一致
+function isNonGpuInst(it){ return !!(it && it.status === "running" && it.start_mode === "non_gpu"); }
+function instIsNonGpu(){ return isNonGpuInst(curInst()); }
 
 async function pollInstStatus(){
   if(dlReady()){
@@ -2641,33 +2604,22 @@ async function pollInstStatus(){
         instOn = on;
         refreshHist();
         // 无卡模式运行按 ¥0.10/时 计费（与实例卡一致），否则按 GPU 原价
-        instNonGpuNow = on && it.start_mode === "non_gpu";
+        instNonGpuNow = isNonGpuInst(it);
         instPrice = instNonGpuNow ? 0.1 : (parseFloat(it.payg_price)||0)/1000;
         instBootAt = on ? new Date(it.status_at).getTime() || null : null;
         renderBill();
-        // 残留的 127.0.0.1 隧道地址处理：隧道开启时端口失效即重建；隧道停用（v1.88+）
-        // 后一律视为陈旧，1 秒轮询内自动换成实测可用的公网转发地址
-        // v2.06：无卡模式（non_gpu）没有 ComfyUI 与公网转发，直接跳过地址获取，避免 fail to fetch 报错
-        const localApi = $("apiBase").value.indexOf("http://127.0.0.1") === 0;
-        const staleTunnel = SSH_TUNNEL_ON
-          ? localApi && (!sshTunnelCur || sshTunnelCur.url !== $("apiBase").value) && Date.now() - sshTunnelFailAt > 60000
-          : localApi;
-        if(on && it.start_mode !== "non_gpu" && (lastInstOn === false || !$("apiBase").value.trim() || staleTunnel)) autoSetApi();
+        // 地址陈旧（含残留的 127.0.0.1 隧道地址、绑定了别的实例）或连接连续失败 → 主动重新发现（v2.11）
+        // 此前条件只认 lastInstOn 由 false 变 true 的边沿，实例一直 running 时永不再刷新 → 卡在旧地址
+        // AutoDL 每次开机都会换转发地址，所以「实例刚变为运行」这条边沿一律强制重发现（内部 8s 节流）
+        const needAddr = apiStale(it.uuid) || connFailStreak >= 2;
+        if(on && it.start_mode !== "non_gpu" && (lastInstOn === false || needAddr)) autoSetApi(true);
         lastInstOn = on;
-        if(instNonGpuNow){ // v2.07：无卡模式连接状态固定显示，覆盖启动时残留的连接失败提示
-          comfyOnline = false;
-          sshTunnelCloseCur();
-          $("dotConn").className = "dot off";
-          if($("connText").textContent !== t("nonGpuIdle")) $("connText").textContent = t("nonGpuIdle");
-        }
+        if(instNonGpuNow) setConnState("nonGpu");
         $("dotInst").className = "dot " + (on ? "on" : "off");
         if(!on && !nbDeployingUuid){
           const ph = $("pwrHint").textContent;
           if(ph===t("shutting") || ph===t("autoOffDone") || ph===t("autoOffDl")) $("pwrHint").textContent = "";
-          comfyOnline = false;
-          sshTunnelCloseCur();
-          $("dotConn").className = "dot off";
-          $("connText").textContent = t("instOff");
+          setConnState("instOff");
           clearInterval(costTimer);
         }
       }
@@ -3006,44 +2958,55 @@ async function cancelTimedShutdown(){
   }catch(e){ $("pwrHint").textContent = t("cancelFail") + e.message; }
 }
 
+/* ---- 连接状态机（v2.11）----
+ * 单一权威：connState 决定 dotConn / connText / statusBox 的渲染；所有写入者只调 setConnState()，
+ * 不再直接改这三处 DOM，也不再用 UI 文本做状态判断（旧实现用 connText.textContent.startsWith(
+ * t("connected")) / !== t("instOff") 做判断，切换语言后条件全部失效）。
+ * 状态：init 初始 | connecting 连接中 | online 已连接 | offline 连接失败
+ *       instOff 实例未开机 | nonGpu 无卡模式暂停 | noApi 地址为空 */
+let connState = "init";
 let comfyOnline = false;
+function setConnState(state, detail){
+  connState = state;
+  if(state === "online"){
+    comfyOnline = true;
+    $("statusBox").style.display = "none";
+    $("dotConn").className = "dot on";
+    $("connText").textContent = t("connected") + (detail || "");
+    return;
+  }
+  comfyOnline = false;
+  $("statusBox").style.display = "";
+  $("dotConn").className = "dot off";
+  if(state === "connecting")   $("connText").textContent = t("connecting");
+  else if(state === "instOff") $("connText").textContent = t("instOff");
+  else if(state === "nonGpu")  $("connText").textContent = t("nonGpuIdle");
+  else if(state === "noApi")   $("connText").textContent = t("apiEmpty");
+  else                         $("connText").textContent = t("connFail") + (detail || "");
+}
 
 async function connect(){
   saveApi();
-  if(instNonGpuNow){ // v2.07：无卡模式不发起连接（无 ComfyUI/公网转发，避免 Failed to fetch）
-    comfyOnline = false;
-    $("dotConn").className = "dot off";
-    $("connText").textContent = t("nonGpuIdle");
-    return;
-  }
-  $("statusBox").style.display = "";
-  $("dotConn").className = "dot off"; $("connText").textContent = t("connecting");
+  if(instIsNonGpu()){ setConnState("nonGpu"); return; }        // 无卡模式无 ComfyUI/公网转发，不发起请求
+  if(instOn === false){ setConnState("instOff"); return; }
+  if(!$("apiBase").value.trim()){ setConnState("noApi"); showAdv(); return; }
+  setConnState("connecting");
   try{
     const r = await fetch(nb("/system_stats"), {cache:"no-store", signal:AbortSignal.timeout(8000)});
     if(!r.ok) throw new Error("HTTP " + r.status);
     const st = await r.json();
     markOnline(st);
   }catch(e){
-    comfyOnline = false;
-    $("dotConn").className = "dot off";
-    if(instOn === false){
-      $("connText").textContent = t("instOff");
-      return;
-    }
-    const host = ($("apiBase").value.match(/^https?:\/\/[^\/]+/)||[""])[0];
-    $("connText").textContent = !$("apiBase").value.trim() ? t("apiEmpty") : (t("connFail") + (e.message||e) + " · " + host);
-    if(!$("apiBase").value.trim()) showAdv();
+    connFailStreak++;
+    setConnState("offline", (e.message||e) + " · " + apiHost());
+    if(connFailStreak >= 2) autoSetApi(true);                  // 地址可能已过期 → 重新发现
   }
 }
 
 function markOnline(st){
-  if(!comfyOnline){
-    comfyOnline = true;
-    openWs();
-  }
-  $("statusBox").style.display = "none";
-  $("dotConn").className = "dot on";
-  $("connText").textContent = t("connected") + st.system.comfyui_version;
+  connFailStreak = 0;
+  if(!comfyOnline) openWs();
+  setConnState("online", st.system.comfyui_version);
   const d = st.devices && st.devices[0];
   $("gpuText").textContent = d ? d.name : "-";
   $("vramText").textContent = d ? (d.vram_free/1073741824).toFixed(1) + " / " + (d.vram_total/1073741824).toFixed(1) + " GB" : "-";
@@ -3075,14 +3038,10 @@ function openWs(){
 }
 
 async function pollStatus(){
-  if(instNonGpuNow){ // v2.07：无卡模式不读公网地址数据（不请求 system_stats/queue/h3ui/stats）
-    comfyOnline = false;
-    $("statusBox").style.display = "";
-    $("dotConn").className = "dot off";
-    $("connText").textContent = t("nonGpuIdle");
-    setTimeout(pollStatus, 4000);
-    return;
-  }
+  // 实例态未知（启动瞬间/未选实例）：只等待不请求，避免拿着上次会话的陈旧地址空发一轮请求；
+  // 例外：用户手填地址且未选实例（手动调试路径）直接放行
+  if(instOn === null && !manualApiPath()){ setTimeout(pollStatus, 1500); return; }
+  if(instIsNonGpu()){ setConnState("nonGpu"); setTimeout(pollStatus, 4000); return; }  // 无卡模式不读公网地址数据
   try{
     const st = await (await fetch(nb("/system_stats"), {cache:"no-store", signal:AbortSignal.timeout(6000)})).json();
     markOnline(st);
@@ -3112,19 +3071,20 @@ async function pollStatus(){
     }
   }catch(e){
     if(instOn === false){
-      comfyOnline = false;
-      $("statusBox").style.display = "";
-      $("dotConn").className = "dot off";
-      if($("connText").textContent !== t("instOff")) $("connText").textContent = t("instOff");
+      connFailStreak = 0;          // 实例关机：失败计数清零，开机后重新按「连接失败」判定
+      setConnState("instOff");
       setTimeout(pollStatus, 4000);
       return;
     }
-    if(comfyOnline || $("connText").textContent.startsWith(t("connected"))){
-      comfyOnline = false;
-      $("statusBox").style.display = "";
-      $("dotConn").className = "dot off";
-      $("connText").textContent = t("connLost") + (e.message||e);
+    connFailStreak++;
+    if(!$("apiBase").value.trim()){
+      setConnState("noApi");
+      showAdv();
+    }else if(connState === "online"){
+      setConnState("offline", t("connLost") + (e.message||e));
     }
+    // 地址过期自愈：连续失败 2 次（约 8s）即重新跑三级地址发现链（内部 15s 节流）
+    if(connFailStreak >= 2 && dlReady() && $("dlInst").value) autoSetApi(true);
   }
   setTimeout(pollStatus, 4000);
 }
@@ -3550,7 +3510,7 @@ if(isDbg()){
   $("dbgBox").style.display = "block";
 }
 
-connect();
+// v2.11：启动不再盲发 connect()——先由实例轮询确定实例态与地址；pollStatus 在实例态未知时只等待
 pollStatus();
 restoreOnLoad();
 pollInstStatus();
