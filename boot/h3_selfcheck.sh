@@ -27,7 +27,7 @@
 # ============================================================================
 set -u
 
-SELF_VER="2.0"
+SELF_VER="2.1"
 REPO="NukumizuKazuhiko/h3-console"
 BRANCH="main"
 BASE="/root/autodl-tmp"
