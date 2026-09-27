@@ -20,7 +20,7 @@ if [ ! -s "$SELF" ]; then
   done
   chmod +x "$SELF" 2>/dev/null
 fi
-[ -s "$SELF" ] && bash "$SELF" >> /root/autodl-tmp/h3_selfcheck.log 2>&1
+[ -s "$SELF" ] && bash "$SELF" >/dev/null 2>&1   # 日志由自检脚本自身写入 h3_selfcheck.log（勿再重定向，否则重复）
 sleep 8
 curl -s -o /dev/null --max-time 3 http://127.0.0.1:6006/system_stats \
   || setsid bash /root/autodl-tmp/ComfyUI/start_h3.sh >> /root/autodl-tmp/comfyui_h3.log 2>&1 < /dev/null

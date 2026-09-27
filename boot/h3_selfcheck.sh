@@ -17,6 +17,7 @@
 # ============================================================================
 set -u
 
+SELF_VER="1.0"
 REPO="NukumizuKazuhiko/h3-console"
 BRANCH="main"
 BASE="/root/autodl-tmp"
@@ -65,6 +66,28 @@ try_sources(){
   for u in "${SRC_TURBO[@]}"; do probe "$u" && { echo "$u"; return 0; }; done
   return 1
 }
+
+# ---- 自我更新：脚本自身也会演进，远端有新版则替换后重新执行 ----------------
+# 避免重蹈「组件部署了却永不更新」的覆辙；此处尚在脚本前段、未读到后续内容，替换安全。
+ALLOW_SELF_UPDATE=1
+for a in "$@"; do [ "$a" = "--no-selfupdate" ] && ALLOW_SELF_UPDATE=0; done
+if [ "$ALLOW_SELF_UPDATE" = "1" ]; then
+  U=""
+  [ -f "$SRC_OK" ] && U=$(cat "$SRC_OK" 2>/dev/null || true)
+  [ -n "$U" ] || U=$(try_sources || true)
+  if [ -n "$U" ]; then
+    N="$BASE/.h3_self.new"
+    if curl -fsSL -m 25 -o "$N" "$U/boot/h3_selfcheck.sh" 2>/dev/null && [ -s "$N" ] && ! cmp -s "$N" "$SELFTEST"; then
+      sed -i 's/\r$//' "$N"
+      cp -f "$N" "$SELFTEST"
+      chmod +x "$SELFTEST"
+      rm -f "$N"
+      echo "[$(ts)] SELFUPD 自检脚本已更新到远端版本，重新执行" >> "$LOG"
+      exec bash "$SELFTEST" --no-selfupdate "$@"
+    fi
+    rm -f "$N"
+  fi
+fi
 
 PREFIX=$(try_sources) || {
   log "所有更新源均不可达，本次跳过（保留现有组件）"
@@ -146,7 +169,7 @@ if ! grep -q 'h3_selfcheck.sh' /etc/autodl.sh 2>/dev/null; then
     echo ""
     echo "# H3 Console: 开机组件自检 + ComfyUI autostart"
     echo "( sleep 5"
-    echo "  bash $SELFTEST >> $LOG 2>&1"
+    echo "  bash $SELFTEST >/dev/null 2>&1   # 日志由脚本自身写入 $LOG"
     echo "  sleep 8"
     echo "  curl -s -o /dev/null --max-time 3 http://127.0.0.1:$PORT/system_stats \\"
     echo "    || setsid bash $COMFY/start_h3.sh >> $BASE/comfyui_h3.log 2>&1 < /dev/null"
@@ -155,5 +178,5 @@ if ! grep -q 'h3_selfcheck.sh' /etc/autodl.sh 2>/dev/null; then
   log "HOOK  /etc/autodl.sh 缺少自检挂载，已补回"
 fi
 
-log "DONE  changed=$any_changed api_changed=$api_changed"
+log "DONE  v$SELF_VER changed=$any_changed api_changed=$api_changed"
 exit 0
